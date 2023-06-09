@@ -191,6 +191,9 @@ export async function initializeTestStore(options = {}, overrideStore = true) {
     const proctoredExamApiUrl = `${getConfig().LMS_BASE_URL}/api/edx_proctoring/v1/proctored_exam/attempt/course_id/${courseMetadata.id}/content_id/${sequenceMetadata.item_id}?is_learning_mfe=true`;
     axiosMock.onGet(proctoredExamApiUrl).reply(200, { exam: {}, active_attempt: {} });
   });
+  // frontend essentials configuration, this will return an status 404 on every like-dislike request
+  const likeDislikeUrlPattern = new RegExp(`${getConfig().COURSE_EXPERIENCE_API_URL}/like/units/.*/`);
+  axiosMock.onGet(likeDislikeUrlPattern).reply(404, {});
 
   logUnhandledRequests(axiosMock);
 
