@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import { injectIntl, intlShape } from '@edx/frontend-platform/i18n';
 import { Collapsible, IconButton } from '@edx/paragon';
 import { faCheckCircle as fasCheckCircle, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
-import { faCheckCircle as farCheckCircle } from '@fortawesome/free-regular-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 import SequenceLink from './SequenceLink';
@@ -44,25 +43,15 @@ const Section = ({
   const sectionTitle = (
     <div className="row w-100 m-0">
       <div className="col-auto p-0">
-        {complete ? (
-          <FontAwesomeIcon
-            icon={fasCheckCircle}
-            fixedWidth
-            className="float-left mt-1 text-success"
-            aria-hidden="true"
-            title={intl.formatMessage(messages.completedSection)}
-          />
-        ) : (
-          <FontAwesomeIcon
-            icon={farCheckCircle}
-            fixedWidth
-            className="float-left mt-1 text-gray-400"
-            aria-hidden="true"
-            title={intl.formatMessage(messages.incompleteSection)}
-          />
-        )}
+        <FontAwesomeIcon
+          icon={fasCheckCircle}
+          fixedWidth
+          className={`float-left mt-1 text-primary ${complete ? 'text-primary' : 'text-gray-400'}`}
+          aria-hidden="true"
+          title={intl.formatMessage(messages.completedSection)}
+        />
       </div>
-      <div className="col-10 ml-3 p-0 font-weight-bold text-dark-500">
+      <div className="col-10 ml-3 p-0 font-weight-bolder text-dark-500">
         <span className="align-middle">{title}</span>
         <span className="sr-only">
           , {intl.formatMessage(complete ? messages.completedSection : messages.incompleteSection)}

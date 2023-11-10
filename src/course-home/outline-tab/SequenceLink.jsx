@@ -1,6 +1,5 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import classNames from 'classnames';
 import { Link } from 'react-router-dom';
 import {
   FormattedMessage,
@@ -8,8 +7,8 @@ import {
   injectIntl,
   intlShape,
 } from '@edx/frontend-platform/i18n';
-import { faCheckCircle as fasCheckCircle } from '@fortawesome/free-solid-svg-icons';
-import { faCheckCircle as farCheckCircle } from '@fortawesome/free-regular-svg-icons';
+import { faCircle as fasCircle } from '@fortawesome/free-solid-svg-icons';
+import { faCircle as farCircle } from '@fortawesome/free-regular-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 import EffortEstimate from '../../shared/effort-estimate';
@@ -20,7 +19,6 @@ const SequenceLink = ({
   id,
   intl,
   courseId,
-  first,
   sequence,
 }) => {
   const {
@@ -36,7 +34,7 @@ const SequenceLink = ({
 
   const timezoneFormatArgs = userTimezone ? { timeZone: userTimezone } : {};
 
-  const coursewareUrl = <Link to={`/course/${courseId}/${id}`}>{title}</Link>;
+  const coursewareUrl = <Link to={`/course/${courseId}/${id}`} className="text-dark-500 font-weight-bolder">{title}</Link>;
   const displayTitle = showLink ? coursewareUrl : title;
 
   const dueDateMessage = (
@@ -84,21 +82,21 @@ const SequenceLink = ({
   );
 
   return (
-    <li>
-      <div className={classNames('', { 'mt-2 pt-2 border-top border-light': !first })}>
+    <li className="px-4 py-1">
+      <div>
         <div className="row w-100 m-0">
           <div className="col-auto p-0">
             {complete ? (
               <FontAwesomeIcon
-                icon={fasCheckCircle}
+                icon={fasCircle}
                 fixedWidth
-                className="float-left text-success mt-1"
+                className="float-left text-primary mt-1"
                 aria-hidden="true"
                 title={intl.formatMessage(messages.completedAssignment)}
               />
             ) : (
               <FontAwesomeIcon
-                icon={farCheckCircle}
+                icon={farCircle}
                 fixedWidth
                 className="float-left text-gray-400 mt-1"
                 aria-hidden="true"

@@ -1,0 +1,7 @@
+.card {
+
+  &.raised-card {
+    border-left: 5px solid var(--indigo-light);
+    box-shadow: 0 .0625rem .125rem rgba(0, 0, 0, .2);
+  }
+}

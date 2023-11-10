@@ -46,7 +46,6 @@ const StartOrResumeCourseCard = ({ intl }) => {
         title={hasVisitedCourse ? intl.formatMessage(messages.resumeBlurb) : intl.formatMessage(messages.startBlurb)}
         actions={(
           <Button
-            variant="brand"
             block
             href={resumeCourseUrl}
             onClick={() => logResumeCourseClick()}
