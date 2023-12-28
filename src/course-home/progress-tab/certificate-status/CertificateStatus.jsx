@@ -179,7 +179,7 @@ const CertificateStatus = ({ intl }) => {
       default:
         // if user completes a course before certificates are available, treat it as notAvailable
         // regardless of passing or nonpassing status
-        if (!canViewCertificate) {
+        if (!canViewCertificate && end) {
           certCase = 'notAvailable';
           endDate = intl.formatDate(end, {
             year: 'numeric',
