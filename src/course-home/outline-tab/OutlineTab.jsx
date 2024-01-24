@@ -5,6 +5,7 @@ import { sendTrackEvent } from '@edx/frontend-platform/analytics';
 import { getAuthenticatedUser } from '@edx/frontend-platform/auth';
 import { injectIntl, intlShape } from '@edx/frontend-platform/i18n';
 import { Button } from '@openedx/paragon';
+import { FeedbackModal, useProgressStatus } from '@edunext/frontend-essentials';
 import { AlertList } from '../../generic/user-messages';
 
 import CourseDates from './widgets/CourseDates';
@@ -123,6 +124,8 @@ const OutlineTab = ({ intl }) => {
     }
   }, [location.search]);
 
+  const { isComplete, isGraded, isPassing } = useProgressStatus(courseId);
+
   return (
     <>
       <div data-learner-type={learnerType} className="row w-100 mx-0 my-3 justify-content-between">
@@ -211,6 +214,7 @@ const OutlineTab = ({ intl }) => {
             <CourseHandouts />
           </div>
         )}
+        <FeedbackModal courseId={courseId} showModal={isGraded ? isPassing : isComplete} />
       </div>
     </>
   );
