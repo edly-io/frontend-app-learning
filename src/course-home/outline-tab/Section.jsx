@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { injectIntl, intlShape } from '@edx/frontend-platform/i18n';
 import { Collapsible, IconButton, Icon } from '@openedx/paragon';
-import { faCheckCircle as fasCheckCircle, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faCheckCircle as fasCheckCircle } from '@fortawesome/free-solid-svg-icons';
 import { faCheckCircle as farCheckCircle } from '@fortawesome/free-regular-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
-import { DisabledVisible } from '@openedx/paragon/icons';
+import { Add, DisabledVisible, Minus } from '@openedx/paragon/icons';
 import SequenceLink from './SequenceLink';
 import { useModel } from '../../generic/model-store';
 
@@ -40,7 +40,7 @@ const Section = ({
 
   useEffect(() => {
     setOpen(defaultOpen);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const sectionTitle = (
@@ -71,16 +71,16 @@ const Section = ({
         </span>
       </div>
       {hideFromTOC && (
-      <div className="row">
-        {hideFromTOC && (
-          <span className="small d-flex align-content-end">
-            <Icon className="mr-2" src={DisabledVisible} data-testid="hide-from-toc-section-icon" />
-            <span data-testid="hide-from-toc-section-text">
-              {intl.formatMessage(messages.hiddenSection)}
+        <div className="row">
+          {hideFromTOC && (
+            <span className="small d-flex align-content-end">
+              <Icon className="mr-2" src={DisabledVisible} data-testid="hide-from-toc-section-icon" />
+              <span data-testid="hide-from-toc-section-text">
+                {intl.formatMessage(messages.hiddenSection)}
+              </span>
             </span>
-          </span>
-        )}
-      </div>
+          )}
+        </div>
       )}
     </div>
   );
@@ -96,7 +96,7 @@ const Section = ({
         iconWhenClosed={(
           <IconButton
             alt={intl.formatMessage(messages.openSection)}
-            icon={faPlus}
+            iconAs={Add}
             onClick={() => { setOpen(true); }}
             size="sm"
           />
@@ -104,7 +104,7 @@ const Section = ({
         iconWhenOpen={(
           <IconButton
             alt={intl.formatMessage(genericMessages.close)}
-            icon={faMinus}
+            iconAs={Minus}
             onClick={() => { setOpen(false); }}
             size="sm"
           />
