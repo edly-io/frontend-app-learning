@@ -121,8 +121,8 @@ const GradeSummaryTable = ({ intl, setAllOfSomeAssignmentTypeIsLocked }) => {
             accessor: 'weightedGrade',
             headerClassName: 'justify-content-end mb-0 text-right',
             Cell: ({ value }) => getCell(value.locked, value.weightedGrade),
-            cellClassName: 'text-right font-weight-semi-bold text-secondary',
-            footerClassName: 'text-secondary',
+            cellClassName: 'text-right font-weight-semi-bold text-tertiary',
+            footerClassName: 'text-tertiary',
           },
         ]}
       >

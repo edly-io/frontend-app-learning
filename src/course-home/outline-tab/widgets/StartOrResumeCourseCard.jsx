@@ -58,7 +58,7 @@ const StartOrResumeCourseCard = ({ intl, title }) => {
         onClick={() => logResumeCourseClick()}
       >
         {hasVisitedCourse ? intl.formatMessage(messages.resumeBlurb) : intl.formatMessage(messages.startBlurb)}
-        <Icon src={isLocaleRtl ? ArrowBackIos : ArrowForwardIos} className="text-secondary ml-1" style={{ height: '16px', width: '16px' }} />
+        <Icon src={isLocaleRtl ? ArrowBackIos : ArrowForwardIos} className="text-tertiary ml-1" style={{ height: '16px', width: '16px' }} />
       </Button>
     </div>
   );

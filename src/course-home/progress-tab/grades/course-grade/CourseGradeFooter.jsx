@@ -50,7 +50,7 @@ const CourseGradeFooter = ({ intl, passingGrade }) => {
   }
 
   const icon = isPassing ? <CheckSquareIcon className="text-success-500 d-inline-flex" />
-    : <InfoIcon className="text-secondary d-inline-flex" />;
+    : <InfoIcon className="text-tertiary d-inline-flex" />;
 
   return (
     <div className={`row w-100 m-0 py-3 px-md-5 rounded-bottom course-grade-footer ${isPassing ? 'bg-suces-100' : 'bg-warnings-100'}`}>

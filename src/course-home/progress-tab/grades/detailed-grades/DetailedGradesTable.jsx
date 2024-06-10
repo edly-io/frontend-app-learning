@@ -54,7 +54,7 @@ const DetailedGradesTable = ({ intl }) => {
                 Header: `${intl.formatMessage(messages.score)}`,
                 accessor: 'score',
                 headerClassName: 'justify-content-end mb-0',
-                cellClassName: 'align-top text-right font-weight-semi-bold text-secondary',
+                cellClassName: 'align-top text-right font-weight-semi-bold text-tertiary',
               },
             ]}
           >

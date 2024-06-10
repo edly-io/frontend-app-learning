@@ -62,7 +62,7 @@ describe('Notes Visibility', () => {
 
     const button = screen.getByRole('switch', { name: 'Hide Notes' });
     expect(button).toBeChecked();
-    expect(button).toHaveClass('text-secondary');
+    expect(button).toHaveClass('text-tertiary');
     expect(button.querySelector('svg')).toHaveClass('fa-pencil-alt');
     expect(button.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
   });

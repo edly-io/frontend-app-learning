@@ -70,7 +70,7 @@ const DetailedGrades = ({ intl }) => {
       )}
       {overviewTabUrl && (
         <p className="m-0 small">
-          <InfoIcon className="mr-2 text-secondary" />
+          <InfoIcon className="mr-2 text-tertiary" />
           <FormattedMessage
             id="progress.ungradedAlert"
             defaultMessage="For progress on ungraded aspects of the course, view your {outlineLink}."
