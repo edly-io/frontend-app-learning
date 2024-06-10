@@ -72,7 +72,7 @@
     &:hover,
     &:focus,
     &.active {
-      color: $secondary;
+      color: $tertiary;
     }
 
     &.active {
@@ -108,7 +108,7 @@
     &:last-of-type {
 
       a {
-        color: $secondary;
+        color: $tertiary;
       }
     }
   }
@@ -200,7 +200,7 @@
     &.related-links {
 
       a {
-        color: $secondary;
+        color: $tertiary;
         font-size: 1.25rem;
         font-weight: $font-weight-semi-bold;
 
@@ -215,7 +215,7 @@
       }
 
       ul {
-        color: $secondary;
+        color: $tertiary;
 
         li {
           font-weight: $font-weight-normal;
@@ -261,7 +261,7 @@
     &:hover,
     &:focus,
     &.active {
-      color: $secondary;
+      color: $tertiary;
       background: $gray-light-400;
     }
 
@@ -277,7 +277,7 @@
         left: 0;
         right: 0;
         height: 3px;
-        background: $secondary;
+        background: $tertiary;
       }
     }
 
@@ -343,7 +343,7 @@
 
         .unit-icon,
         .unit-title {
-          color: $secondary;
+          color: $tertiary;
         }
 
         &:after {
@@ -355,14 +355,14 @@
           right: auto;
           width: 2px;
           height: auto;
-          background: $secondary;
+          background: $tertiary;
         }
       }
     }
 
     .dropdown-item {
       &.active {
-        color: $secondary;
+        color: $tertiary;
         background: $gray-light-400;
       }
     }
@@ -379,7 +379,7 @@
     font-size: 1.25rem;
 
     .pgn__icon {
-      color: $secondary;
+      color: $tertiary;
     }
 
     @media (max-width: (-1 + map-get($grid-breakpoints, "sm"))) {
@@ -451,7 +451,7 @@
   color: $primary;
 
   .is-active & {
-    color: $secondary;
+    color: $tertiary;
   }
 }
 
@@ -476,7 +476,7 @@
     }
 
     .pgn__icon {
-      color: $secondary;
+      color: $tertiary;
     }
 
     &:focus:before {
@@ -552,7 +552,7 @@
     > a[href] {
 
       &.pgn__hyperlink {
-        color: $secondary;
+        color: $tertiary;
         text-decoration: none;
 
         &:hover {
@@ -651,7 +651,7 @@
 
     &:hover {
       span.align-middle {
-        color: $secondary;
+        color: $tertiary;
       }
     }
   }

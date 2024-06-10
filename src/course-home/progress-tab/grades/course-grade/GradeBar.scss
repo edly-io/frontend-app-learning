@@ -21,7 +21,7 @@
   }
 
   .grade-bar--current-non-passing {
-    fill: $secondary;
+    fill: $tertiary;
   }
 }
 
@@ -52,8 +52,8 @@
 
 #non-passing-grade-tooltip {
   .arrow::after {
-    border-top-color: $secondary;
+    border-top-color: $tertiary;
   }
 
-  background: $secondary;
+  background: $tertiary;
 }

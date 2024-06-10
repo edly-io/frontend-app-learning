@@ -43,7 +43,7 @@ const DetailedGrades = ({ intl }) => {
 
   const outlineLink = overviewTabUrl && (
     <Hyperlink
-      variant="secondary"
+      variant="tertiary"
       isInline
       destination={overviewTabUrl}
       onClick={logOutlineLinkClick}

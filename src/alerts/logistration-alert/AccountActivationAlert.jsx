@@ -91,7 +91,7 @@ const AccountActivationAlert = ({
           {message}
           <Spinner
             animation="border"
-            variant="secondary"
+            variant="tertiary"
             style={{ height: '1.5rem', width: '1.5rem' }}
           />
         </div>

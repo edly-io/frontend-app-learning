@@ -135,7 +135,7 @@ const ProctoringInfoPanel = ({ intl }) => {
 
   if (isNotYetReleased(releaseDate)) {
     onboardingExamButton = (
-      <Button variant="secondary" block disabled aria-disabled="true">
+      <Button variant="tertiary" block disabled aria-disabled="true">
         {intl.formatMessage(
           messages.proctoringOnboardingButtonNotOpen,
           {
@@ -150,7 +150,7 @@ const ProctoringInfoPanel = ({ intl }) => {
     );
   } else if (onboardingPastDue) {
     onboardingExamButton = (
-      <Button variant="secondary" block disabled aria-disabled="true">
+      <Button variant="tertiary" block disabled aria-disabled="true">
         {intl.formatMessage(messages.proctoringOnboardingButtonPastDue)}
       </Button>
     );

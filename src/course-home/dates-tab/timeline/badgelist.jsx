@@ -37,7 +37,7 @@ function getBadgeListAndColor(date, intl, item, items) {
     {
       message: messages.today,
       shownForDay: isToday,
-      bg: 'bg-secondary',
+      bg: 'bg-tertiary',
       className: 'text-black',
     },
     {
