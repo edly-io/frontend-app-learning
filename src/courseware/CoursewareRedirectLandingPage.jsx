@@ -21,6 +21,7 @@ const CoursewareRedirectLandingPage = () => {
         />
       )}
       />
+
       <Switch>
         <DecodePageRoute
           path={`${path}/survey/:courseId`}
