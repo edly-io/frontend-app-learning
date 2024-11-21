@@ -328,9 +328,9 @@
   max-width: 640px;
   margin: 0 auto;
 
-  @media (max-width: -1 + map-get($grid-breakpoints, "sm")) {
+  @media (--pgn-size-breakpoint-max-width-xs) {
     flex-direction: column;
-    gap: $spacer;
+    gap: var(--pgn-spacing-spacer-base);
   }
 
   .previous-button,
@@ -345,7 +345,7 @@
   .next-button {
     flex-basis: 75%;
 
-     @media (max-width: -1 + map-get($grid-breakpoints, "sm")) {
+     @media (--pgn-size-breakpoint-max-width-xs) {
        flex-basis: 100%;
      }
   }
@@ -353,7 +353,7 @@
   .previous-button {
     flex-basis: 25%;
 
-     @media (max-width: -1 + map-get($grid-breakpoints, "sm")) {
+     @media (--pgn-size-breakpoint-max-width-xs) {
        flex-basis: 100%;
      }
   }
@@ -365,7 +365,7 @@
 
   .next-button,
   .previous-button {
-    @media (min-width: map-get($grid-breakpoints, "md")) {
+    @media (--pgn-size-breakpoint-min-width-md) {
       flex-basis: auto;
       min-width: 8rem;
     }
@@ -429,7 +429,6 @@
 
 // Import component-specific sass files
 @import "courseware/course/celebration/CelebrationModal.scss";
-@import "courseware/course/sidebar/sidebars/discussions/Discussions.scss";
 @import "courseware/course/sidebar/sidebars/notifications/NotificationIcon.scss";
 @import "courseware/course/sequence/lock-paywall/LockPaywall.scss";
 @import "shared/streak-celebration/StreakCelebrationModal.scss";
