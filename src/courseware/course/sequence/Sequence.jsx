@@ -9,6 +9,7 @@ import {
 import { useIntl } from '@edx/frontend-platform/i18n';
 import { useSelector } from 'react-redux';
 import SequenceExamWrapper from '@edx/frontend-lib-special-exams';
+import { LikeDislikeUnit } from '@edunext/frontend-essentials';
 
 import PageLoading from '@src/generic/PageLoading';
 import { useModel } from '@src/generic/model-store';
@@ -147,19 +148,25 @@ const Sequence = ({
   const gated = sequence && sequence.gatedContent !== undefined && sequence.gatedContent.gated;
 
   const renderUnitNavigation = (isAtTop) => (
-    <UnitNavigation
-      sequenceId={sequenceId}
-      unitId={unitId}
-      isAtTop={isAtTop}
-      onClickPrevious={() => {
-        logEvent('edx.ui.lms.sequence.previous_selected', 'bottom');
-        handlePrevious();
-      }}
-      onClickNext={() => {
-        logEvent('edx.ui.lms.sequence.next_selected', 'bottom');
-        handleNext();
-      }}
-    />
+    <>
+      <div className="nelp-container">
+        <LikeDislikeUnit courseId={courseId} unitId={unitId} />
+      </div>
+
+      <UnitNavigation
+        sequenceId={sequenceId}
+        unitId={unitId}
+        isAtTop={isAtTop}
+        onClickPrevious={() => {
+          logEvent('edx.ui.lms.sequence.previous_selected', 'bottom');
+          handlePrevious();
+        }}
+        onClickNext={() => {
+          logEvent('edx.ui.lms.sequence.next_selected', 'bottom');
+          handleNext();
+        }}
+      />
+    </>
   );
 
   const defaultContent = (
