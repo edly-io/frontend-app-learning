@@ -48,9 +48,9 @@ describe('Sequence Navigation Tabs', () => {
 
   it('renders unit buttons and dropdown button', async () => {
     let container = null;
+    useIndexOfLastVisibleChild.mockReturnValue([-1, null, null]);
+    const booyah = render(<SequenceNavigationTabs {...mockData} />, { wrapWithRouter: true });
     await act(async () => {
-      useIndexOfLastVisibleChild.mockReturnValue([-1, null, null]);
-      const booyah = render(<SequenceNavigationTabs {...mockData} />, { wrapWithRouter: true });
       container = booyah.container;
 
       const dropdownToggle = container.querySelector('.dropdown-toggle');
