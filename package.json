@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "@edunext/frontend-essentials": "^3.0.1",
-    "@edx/brand": "npm:@openedx/brand-openedx@1.2.2",
+    "@edx/brand": "github:nelc/brand-openedx#open-release/redwood.nelp",
     "@edx/frontend-component-footer": "npm:@edunext/frontend-component-footer@13.0.4-alpha.1",
     "@edx/frontend-component-header": "npm:@edunext/frontend-component-header@5.0.2-alpha.1",
     "@edx/frontend-lib-learning-assistant": "npm:@edunext/frontend-lib-learning-assistant@2.0.0-alpha.1",
