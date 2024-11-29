@@ -43,6 +43,7 @@ describe('Course Home Tours', () => {
   const outlineUrl = `${getConfig().LMS_BASE_URL}/api/course_home/outline/${courseId}`;
   const tourDataUrl = `${getConfig().LMS_BASE_URL}/api/user_tours/v1/MockUser`;
   const proctoringUrl = `${getConfig().LMS_BASE_URL}/api/edx_proctoring/v1/user_onboarding/status?is_learning_mfe=true&course_id=course-v1%3AedX%2BTest%2Brun&username=MockUser`;
+  const progressUrl = `${getConfig().LMS_BASE_URL}/api/course_home/progress/${courseId}`;
 
   const store = initializeStore();
   const defaultTabData = Factory.build('outlineTabData');
@@ -80,6 +81,9 @@ describe('Course Home Tours', () => {
       course_home_tour_status: 'no-tour',
       show_courseware_tour: false,
     });
+    // This will return  404 in order to set the failure behavior and don't set extra
+    // extra conditions required by the success path.
+    axiosMock.onGet(progressUrl).reply(404, {});
 
     logUnhandledRequests(axiosMock);
   });
