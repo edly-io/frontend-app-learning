@@ -41,3 +41,7 @@ config.reporters = [...(config.reporters || []), ["jest-console-group-reporter",
 }]];
 
 module.exports = config;
+
+module.exports.transformIgnorePatterns = [
+  '/node_modules/(?!(@edx|@edunext|@openedx))',
+];
