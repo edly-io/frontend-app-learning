@@ -36,7 +36,7 @@
     "@edx/frontend-component-header": "npm:@edunext/frontend-component-header@5.0.2-alpha.1",
     "@edx/frontend-lib-learning-assistant": "npm:@edunext/frontend-lib-learning-assistant@2.0.0-alpha.1",
     "@edx/frontend-lib-special-exams": "npm:@edunext/frontend-lib-special-exams@3.0.1-alpha.1",
-    "@edx/frontend-platform": "npm:@edunext/frontend-platform@7.1.2-alpha.1",
+    "@edx/frontend-platform": "npm:@edunext/frontend-platform@^7.1.2-alpha-nelc.1",
     "@edx/openedx-atlas": "0.6.0",
     "@edx/react-unit-test-utils": "npm:@edunext/react-unit-test-utils@2.0.0-alpha.1",
     "@fortawesome/fontawesome-svg-core": "1.3.0",
