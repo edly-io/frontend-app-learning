@@ -6,7 +6,6 @@
 @import "~@edx/frontend-component-footer/dist/footer";
 @import "~@edx/frontend-component-header/dist/index";
 
-
 #root {
   display: flex;
   flex-direction: column;
@@ -38,6 +37,37 @@
   }
 }
 
+.purple-color {
+  color: #4600c7 !important;
+}
+.secondary-color-btn{
+  color: #374151 !important;
+}
+.border-purple-color {
+  border-color: #4600c7 !important;
+}
+.purple-bg {
+  background-color: #4600c7 !important;
+}
+.purple-bg.transparent-bg {
+  background-color: transparent !important;
+}
+.dark-black-color {
+  color: #111827 !important;
+}
+.bg-light-grey {
+  background-color: #f3f3f3;
+}
+.dove-gray-color{
+  color: #707070 !important;
+}
+.color-white{
+  color: white !important;
+}
+
+.color-allports{
+color: #006DAA !important;
+}
 .nav-underline-tabs {
   margin: 0 0 -1px;
 
@@ -185,7 +215,7 @@
     max-width: 28rem;
   }
 
-  .navigation-tab-width-medium{
+  .navigation-tab-width-medium {
     max-width: 23.5rem;
   }
 
@@ -309,8 +339,8 @@
   // here we compensate for the padding of the parent div with "container-xl"
   // class to ensure that the viewport width is the same as the width of the
   // iframe.
-  margin-left: -$grid-gutter-width * .5;
-  margin-right: -$grid-gutter-width * .5;
+  margin-left: -$grid-gutter-width * 0.5;
+  margin-right: -$grid-gutter-width * 0.5;
 
   margin-bottom: 2rem;
 
@@ -348,17 +378,17 @@
   .next-button {
     flex-basis: 75%;
 
-     @media (max-width: -1 + map-get($grid-breakpoints, "sm")) {
-       flex-basis: 100%;
-     }
+    @media (max-width: -1 + map-get($grid-breakpoints, "sm")) {
+      flex-basis: 100%;
+    }
   }
 
   .previous-button {
     flex-basis: 25%;
 
-     @media (max-width: -1 + map-get($grid-breakpoints, "sm")) {
-       flex-basis: 100%;
-     }
+    @media (max-width: -1 + map-get($grid-breakpoints, "sm")) {
+      flex-basis: 100%;
+    }
   }
 }
 
@@ -415,7 +445,7 @@
 
 .raised-card {
   border: 0 !important;
-  box-shadow: 0 .0625rem .125rem rgba(0, 0, 0, .2) !important;
+  box-shadow: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.2) !important;
 }
 
 .icon-hover {
@@ -429,6 +459,175 @@
   position: sticky;
   top: 0;
 }
+
+// Mubeen Code
+div.instructor {
+  &__header {
+    background-color: #111827 !important;
+    padding: 20px 0 !important;
+  }
+  .view-course-wrap {
+    align-items: center;
+    .col-form-label {
+      padding: 0 12px !important;
+    }
+    #masquerade-widget-toggle {
+      padding: 10px 28px 10px 17px; //mubeen RTL
+      &::after {
+        left: 12px;
+      }
+    }
+  }
+  .view-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    .btn-inverse-outline-primary {
+      padding: 10px 17px;
+    }
+  }
+}
+
+// Mubeen Code Progress
+.courseProgress {
+  h1 {
+    color: #111827;
+    font-size: 25px;
+    line-height: 30px;
+    font-weight: 800;
+    margin-bottom: 0;
+  }
+  .viewStdioBtn {
+    color: #111827;
+    border-color: #1d1d1f;
+  }
+}
+.progressWrapper {
+  .raised-card {
+    border: 1px solid #f3f3f3 !important;
+    box-shadow: unset !important;
+    border-left: 8px solid #f3f3f3 !important;
+    border-radius: 8px !important;
+  }
+  h2 {
+    font-size: 18px;
+    line-height: 24px;
+    font-weight: 600;
+    margin-bottom: 0 !important;
+  }
+  .relatedLinks {
+    background-color: #f3f3f3;
+    padding: 20px;
+    border-radius: 8px;
+    ul {
+      list-style: none;
+    }
+    a {
+      color: #111827;
+    }
+  }
+  .gradeFooter {
+    padding: 9px 15px !important;
+    background-color: #f3f3f3 !important;
+    color: #111827 !important;
+    .warnText {
+      color: #111827 !important;
+      font-weight: 600;
+      font-size: 14px;
+      line-height: 18px;
+    }
+  }
+  .pgn {
+    &__data-table {
+      th {
+        background-color: transparent !important;
+        border-bottom: 1px solid #e5e7eb !important;
+      }
+      &-wrapper {
+        box-shadow: unset !important;
+      }
+      &.is-striped tr:nth-child(even) {
+        background-color: transparent !important;
+      }
+    }
+  }
+  .tableFooter {
+    background-color: #f3f3f3 !important;
+  }
+  #weighted-grade-summary {
+    font-size: 14px;
+    line-height: 30px;
+    font-weight: 600;
+  }
+  a.muted-link{
+    color: #111827 !important;
+  }
+}
+
+// Mubeen Code
+.crumbsWrapper {
+  background-color: #f3f3f3 !important;
+  border-radius: 6px 6px 0 0;
+  padding: 9px 12px !important;
+  .breadCrumbDot {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-self: center;
+    line-height: 0;
+    font-size: 45px;
+    justify-content: center;
+    margin-top: -5px;
+  }
+}
+.actionBtn {
+  .notification-btn {
+    border: 1px solid #d1d5db !important;
+    border-radius: 6px;
+    color: #9ca3af !important;
+    margin-bottom: 2px !important;
+    padding: 4px !important;
+    background-color: transparent;
+  }
+}
+
+.sequenceWrapper {
+  .sequence {
+    .previous-btn {
+      color: #111827 !important;
+    }
+    .next-btn {
+      color: #111827 !important;
+    }
+    .sequence-navigation {
+      .btn{
+        &.active{
+          color: #111827 !important;
+          &:after{
+            background-color: #4600C7 !important;
+          }
+        }
+      }
+    }
+    .wrap-instructor-info{
+      a{
+        &.instructor-info-action{
+          background-color: #4600C7 !important;
+        }
+      }
+    }
+    .unit-navigation{
+      .previous-button, .next-button{
+        flex-basis: 110px;
+        color: #111827;
+        border-color: #1D1D1F;
+      }
+    
+    }
+  }
+}
+
+
 
 // Import component-specific sass files
 @import "courseware/course/celebration/CelebrationModal.scss";

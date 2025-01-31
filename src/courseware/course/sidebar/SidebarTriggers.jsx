@@ -13,13 +13,13 @@ const SidebarTriggers = () => {
   const isMobileView = useWindowSize().width < breakpoints.small.minWidth;
 
   return (
-    <div className="d-flex ml-auto">
+    <div className="d-flex ml-auto gap-3" style={{ gap: '10px' }}>
       {SIDEBAR_ORDER.map((sidebarId) => {
         const { Trigger } = SIDEBARS[sidebarId];
         const isActive = sidebarId === currentSidebar;
         return (
           <div
-            className={classNames({ 'ml-1': !isMobileView, 'border-primary-700 sidebar-active': isActive })}
+            className={classNames({ '': !isMobileView, 'border-purple-color sidebar-active': isActive })}
             style={{ borderBottom: '2px solid', borderColor: isActive ? 'inherit' : 'transparent' }}
             key={sidebarId}
           >

@@ -21,8 +21,8 @@ const GradeSummaryHeader = ({ intl, allOfSomeAssignmentTypeIsLocked }) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
   return (
-    <div className="row w-100 m-0 align-items-center">
-      <h3 className="h4 mb-3 mr-1">{intl.formatMessage(messages.gradeSummary)}</h3>
+    <div className="d-flex mb-4 align-items-center ">
+      <h2>{intl.formatMessage(messages.gradeSummary)}</h2>
       <OverlayTrigger
         trigger="click"
         placement="top"
@@ -41,7 +41,6 @@ const GradeSummaryHeader = ({ intl, allOfSomeAssignmentTypeIsLocked }) => {
           alt={intl.formatMessage(messages.gradeSummaryTooltipAlt)}
           src={InfoOutline}
           iconAs={Icon}
-          className="mb-3"
           size="sm"
           disabled={gradesFeatureIsFullyLocked}
         />

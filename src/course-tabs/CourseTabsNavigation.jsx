@@ -14,8 +14,8 @@ const CourseTabsNavigation = ({
   const { show } = useCoursewareSearchState();
 
   return (
-    <div id="courseTabsNavigation" className={classNames('course-tabs-navigation', className)}>
-      <div className="container-xl">
+    <div id="courseTabsNavigation" className={classNames('course-tabs-navigation course_tabs_wrapper', className)}>
+      <div className="container-xl ">
         <Tabs
           className="nav-underline-tabs"
           aria-label={intl.formatMessage(messages.courseMaterial)}

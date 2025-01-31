@@ -1,0 +1,59 @@
+.grade-bar rect {
+  height: 6px;
+}
+.grade-bar .grade-bar__base {
+  fill: #F3F3F3;
+}
+.grade-bar .grade-bar__divider {
+  fill: #4600C7;
+  width: 1px;
+}
+.grade-bar .grade-bar--passing {
+  fill: #4600C7;
+}
+.grade-bar .grade-bar--current-passing {
+  fill: black;
+}
+.grade-bar .grade-bar--current-non-passing {
+  fill: yellow;
+}
+
+.arrow {
+  margin: 0 !important;
+}
+
+#minimum-grade-tooltip {
+  background: #BBBBBC !important;
+  filter: unset !important;
+  border: 1px solid #BBBBBC !important;
+}
+#minimum-grade-tooltip .arrow::after {
+  border-bottom-color: #BBBBBC;
+}
+#minimum-grade-tooltip .popover-body {
+  padding: 8px 11px;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: #fff !important;
+}
+
+#passing-grade-tooltip {
+  background: brown;
+}
+#passing-grade-tooltip .arrow::after {
+  border-top-color: brown;
+}
+
+#non-passing-grade-tooltip {
+  background: #4600C7;
+  filter: unset !important;
+}
+#non-passing-grade-tooltip .arrow::after {
+  border-top-color: #4600C7;
+}
+#non-passing-grade-tooltip .popover-body {
+  padding: 8px 11px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff !important;
+}/*# sourceMappingURL=GradeBar.css.map */

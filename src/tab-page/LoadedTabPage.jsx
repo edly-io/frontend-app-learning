@@ -79,7 +79,7 @@ const LoadedTabPage = ({
           }}
         />
         <CourseTabsNavigation tabs={tabs} className="mb-3" activeTabSlug={activeTabSlug} />
-        <div className="container-xl">
+        <div className="container-xl courseDateWrapper">
           {children}
         </div>
       </main>

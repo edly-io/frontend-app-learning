@@ -1,32 +1,35 @@
 /* eslint-disable no-use-before-define */
-import { useEffect, useState } from 'react';
-import PropTypes from 'prop-types';
+import { useEffect, useState } from "react";
+import PropTypes from "prop-types";
 
 import {
   sendTrackEvent,
   sendTrackingLogEvent,
-} from '@edx/frontend-platform/analytics';
-import { useIntl } from '@edx/frontend-platform/i18n';
-import { useSelector } from 'react-redux';
-import SequenceExamWrapper from '@edx/frontend-lib-special-exams';
+} from "@edx/frontend-platform/analytics";
+import { useIntl } from "@edx/frontend-platform/i18n";
+import { useSelector } from "react-redux";
+import SequenceExamWrapper from "@edx/frontend-lib-special-exams";
 
-import PageLoading from '@src/generic/PageLoading';
-import { useModel } from '@src/generic/model-store';
-import { useSequenceBannerTextAlert, useSequenceEntranceExamAlert } from '@src/alerts/sequence-alerts/hooks';
-import SequenceContainerSlot from '../../../plugin-slots/SequenceContainerSlot';
+import PageLoading from "@src/generic/PageLoading";
+import { useModel } from "@src/generic/model-store";
+import {
+  useSequenceBannerTextAlert,
+  useSequenceEntranceExamAlert,
+} from "@src/alerts/sequence-alerts/hooks";
+import SequenceContainerSlot from "../../../plugin-slots/SequenceContainerSlot";
 
-import { getCoursewareOutlineSidebarSettings } from '../../data/selectors';
-import CourseLicense from '../course-license';
-import Sidebar from '../sidebar/Sidebar';
-import NewSidebar from '../new-sidebar/Sidebar';
+import { getCoursewareOutlineSidebarSettings } from "../../data/selectors";
+import CourseLicense from "../course-license";
+import Sidebar from "../sidebar/Sidebar";
+import NewSidebar from "../new-sidebar/Sidebar";
 import {
   Trigger as CourseOutlineTrigger,
   Sidebar as CourseOutlineTray,
-} from '../sidebar/sidebars/course-outline';
-import messages from './messages';
-import HiddenAfterDue from './hidden-after-due';
-import { SequenceNavigation, UnitNavigation } from './sequence-navigation';
-import SequenceContent from './SequenceContent';
+} from "../sidebar/sidebars/course-outline";
+import messages from "./messages";
+import HiddenAfterDue from "./hidden-after-due";
+import { SequenceNavigation, UnitNavigation } from "./sequence-navigation";
+import SequenceContent from "./SequenceContent";
 
 const Sequence = ({
   unitId,
@@ -37,20 +40,23 @@ const Sequence = ({
   previousSequenceHandler,
 }) => {
   const intl = useIntl();
-  const {
-    canAccessProctoredExams,
-    license,
-  } = useModel('coursewareMeta', courseId);
-  const {
-    isStaff,
-    originalUserIsStaff,
-    isNewDiscussionSidebarViewEnabled,
-  } = useModel('courseHomeMeta', courseId);
-  const sequence = useModel('sequences', sequenceId);
-  const unit = useModel('units', unitId);
-  const sequenceStatus = useSelector(state => state.courseware.sequenceStatus);
-  const sequenceMightBeUnit = useSelector(state => state.courseware.sequenceMightBeUnit);
-  const { enableNavigationSidebar: isEnabledOutlineSidebar } = useSelector(getCoursewareOutlineSidebarSettings);
+  const { canAccessProctoredExams, license } = useModel(
+    "coursewareMeta",
+    courseId
+  );
+  const { isStaff, originalUserIsStaff, isNewDiscussionSidebarViewEnabled } =
+    useModel("courseHomeMeta", courseId);
+  const sequence = useModel("sequences", sequenceId);
+  const unit = useModel("units", unitId);
+  const sequenceStatus = useSelector(
+    (state) => state.courseware.sequenceStatus
+  );
+  const sequenceMightBeUnit = useSelector(
+    (state) => state.courseware.sequenceMightBeUnit
+  );
+  const { enableNavigationSidebar: isEnabledOutlineSidebar } = useSelector(
+    getCoursewareOutlineSidebarSettings
+  );
 
   const handleNext = () => {
     const nextIndex = sequence.unitIds.indexOf(unitId) + 1;
@@ -79,7 +85,8 @@ const Sequence = ({
   const logEvent = (eventName, widgetPlacement, targetUnitId) => {
     // Note: tabs are tracked with a 1-indexed position
     // as opposed to a 0-index used throughout this MFE
-    const currentIndex = sequence.unitIds.length > 0 ? sequence.unitIds.indexOf(unitId) : 0;
+    const currentIndex =
+      sequence.unitIds.length > 0 ? sequence.unitIds.indexOf(unitId) : 0;
     const payload = {
       current_tab: currentIndex + 1,
       id: unitId,
@@ -100,13 +107,13 @@ const Sequence = ({
   useEffect(() => {
     function receiveMessage(event) {
       const { type } = event.data;
-      if (type === 'entranceExam.passed') {
+      if (type === "entranceExam.passed") {
         // I know this seems (is) intense. It is implemented this way since we need to refetch the underlying
         // course blocks that were originally hidden because the Entrance Exam was not passed.
         global.location.reload();
       }
     }
-    global.addEventListener('message', receiveMessage);
+    global.addEventListener("message", receiveMessage);
   }, []);
 
   const [unitHasLoaded, setUnitHasLoaded] = useState(false);
@@ -126,25 +133,28 @@ const Sequence = ({
 
   // If sequence might be a unit, we want to keep showing a spinner - the courseware container will redirect us when
   // it knows which sequence to actually go to.
-  const loading = sequenceStatus === 'loading' || (sequenceStatus === 'failed' && sequenceMightBeUnit);
+  const loading =
+    sequenceStatus === "loading" ||
+    (sequenceStatus === "failed" && sequenceMightBeUnit);
   if (loading) {
     if (!sequenceId) {
-      return (<div> {intl.formatMessage(messages.noContent)} </div>);
+      return <div> {intl.formatMessage(messages.noContent)} </div>;
     }
     return (
-      <PageLoading
-        srMessage={intl.formatMessage(messages.loadingSequence)}
-      />
+      <PageLoading srMessage={intl.formatMessage(messages.loadingSequence)} />
     );
   }
 
-  if (sequenceStatus === 'loaded' && sequence.isHiddenAfterDue) {
+  if (sequenceStatus === "loaded" && sequence.isHiddenAfterDue) {
     // Shouldn't even be here - these sequences are normally stripped out of the navigation.
     // But we are here, so render a notice instead of the normal content.
     return <HiddenAfterDue courseId={courseId} />;
   }
 
-  const gated = sequence && sequence.gatedContent !== undefined && sequence.gatedContent.gated;
+  const gated =
+    sequence &&
+    sequence.gatedContent !== undefined &&
+    sequence.gatedContent.gated;
 
   const renderUnitNavigation = (isAtTop) => (
     <UnitNavigation
@@ -152,11 +162,11 @@ const Sequence = ({
       unitId={unitId}
       isAtTop={isAtTop}
       onClickPrevious={() => {
-        logEvent('edx.ui.lms.sequence.previous_selected', 'bottom');
+        logEvent("edx.ui.lms.sequence.previous_selected", "bottom");
         handlePrevious();
       }}
       onClickNext={() => {
-        logEvent('edx.ui.lms.sequence.next_selected', 'bottom');
+        logEvent("edx.ui.lms.sequence.next_selected", "bottom");
         handleNext();
       }}
     />
@@ -164,41 +174,50 @@ const Sequence = ({
 
   const defaultContent = (
     <>
-      <div className="sequence-container d-inline-flex flex-row w-100">
+      <div className="sequence-container d-inline-flex flex-row w-100 sequenceWrapper">
         <CourseOutlineTrigger />
         <CourseOutlineTray />
-        <div className="sequence w-100">
-          {!isEnabledOutlineSidebar && (
-            <div className="sequence-navigation-container">
-              <SequenceNavigation
+        <div className=" w-100">
+          <div className="sequence">
+            {!isEnabledOutlineSidebar && (
+              <div className="sequence-navigation-container">
+                <SequenceNavigation
+                  sequenceId={sequenceId}
+                  unitId={unitId}
+                  nextHandler={() => {
+                    logEvent("edx.ui.lms.sequence.next_selected", "top");
+                    handleNext();
+                  }}
+                  onNavigate={(destinationUnitId) => {
+                    logEvent(
+                      "edx.ui.lms.sequence.tab_selected",
+                      "top",
+                      destinationUnitId
+                    );
+                    handleNavigate(destinationUnitId);
+                  }}
+                  previousHandler={() => {
+                    logEvent("edx.ui.lms.sequence.previous_selected", "top");
+                    handlePrevious();
+                  }}
+                />
+              </div>
+            )}
+
+            <div className="unit-container flex-grow-1 pt-4">
+              <SequenceContent
+                courseId={courseId}
+                gated={gated}
                 sequenceId={sequenceId}
                 unitId={unitId}
-                nextHandler={() => {
-                  logEvent('edx.ui.lms.sequence.next_selected', 'top');
-                  handleNext();
-                }}
-                onNavigate={(destinationUnitId) => {
-                  logEvent('edx.ui.lms.sequence.tab_selected', 'top', destinationUnitId);
-                  handleNavigate(destinationUnitId);
-                }}
-                previousHandler={() => {
-                  logEvent('edx.ui.lms.sequence.previous_selected', 'top');
-                  handlePrevious();
-                }}
+                unitLoadedHandler={handleUnitLoaded}
               />
+              {unitHasLoaded && renderUnitNavigation(false)}
             </div>
-          )}
-
-          <div className="unit-container flex-grow-1 pt-4">
-            <SequenceContent
-              courseId={courseId}
-              gated={gated}
-              sequenceId={sequenceId}
-              unitId={unitId}
-              unitLoadedHandler={handleUnitLoaded}
-            />
-            {unitHasLoaded && renderUnitNavigation(false)}
           </div>
+          {sequenceStatus === "loaded" && (
+            <CourseLicense license={license || undefined} />
+          )}
         </div>
         {isNewDiscussionSidebarViewEnabled ? <NewSidebar /> : <Sidebar />}
       </div>
@@ -206,7 +225,7 @@ const Sequence = ({
     </>
   );
 
-  if (sequenceStatus === 'loaded') {
+  if (sequenceStatus === "loaded") {
     return (
       <div>
         <SequenceExamWrapper
@@ -219,14 +238,13 @@ const Sequence = ({
           {isEnabledOutlineSidebar && renderUnitNavigation(true)}
           {defaultContent}
         </SequenceExamWrapper>
-        <CourseLicense license={license || undefined} />
       </div>
     );
   }
 
   // sequence status 'failed' and any other unexpected sequence status.
   return (
-    <p className="text-center py-5 mx-auto" style={{ maxWidth: '30em' }}>
+    <p className="text-center py-5 mx-auto" style={{ maxWidth: "30em" }}>
       {intl.formatMessage(messages.loadFailure)}
     </p>
   );

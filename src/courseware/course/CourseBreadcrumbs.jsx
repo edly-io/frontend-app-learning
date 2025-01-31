@@ -28,7 +28,7 @@ const CourseBreadcrumb = ({
   return (
     <>
       {withSeparator && (
-        <li className="col-auto p-0 mx-2 text-primary-500 text-truncate text-nowrap" role="presentation" aria-hidden>/</li>
+        <li className="col-auto p-0 mx-2 dark-black-color text-truncate text-nowrap breadCrumbDot" role="presentation" aria-hidden>.</li>
       )}
 
       <li
@@ -41,7 +41,7 @@ const CourseBreadcrumb = ({
       >
         {showRegularLink ? (
           <Link
-            className="text-primary-500"
+            className="dark-black-color"
             to={
               defaultContent.sequences.length
                 ? `/course/${courseId}/${defaultContent.sequences[0].id}`
@@ -54,7 +54,7 @@ const CourseBreadcrumb = ({
           <>
             {
               // eslint-disable-next-line
-              <a className="text-primary-500" onClick={open} ref={setTarget}>
+              <a className="dark-black-color" onClick={open} ref={setTarget}>
                 {defaultContent.label}
               </a>
             }
@@ -154,11 +154,11 @@ const CourseBreadcrumbs = ({
   }, [courseStatus, sequenceStatus, allSequencesInSections]);
 
   return (
-    <nav aria-label="breadcrumb" className="d-inline-block col-sm-10 mb-3">
-      <ol className="list-unstyled d-flex flex-nowrap align-items-center m-0">
+    <nav aria-label="breadcrumb" className="d-inline-block col-sm-12 crumbsWrapper">
+      <ol className="d-flex list-unstyled flex-nowrap align-items-center m-0">
         <li className="list-unstyled col-auto m-0 p-0">
           <Link
-            className="flex-shrink-0 text-primary"
+            className="flex-shrink-0 dark-black-color"
             to={`/course/${courseId}/home`}
             replace
           >

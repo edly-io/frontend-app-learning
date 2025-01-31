@@ -1,0 +1,77 @@
+.dates-day {
+  position: relative;
+}
+
+.dates-line-top {
+  display: inline-block;
+  position: absolute;
+  left: 0.45rem;
+  top: 0;
+  height: 0.45rem;
+  z-index: 0;
+}
+
+.dates-dot {
+  display: inline-block;
+  position: absolute;
+  border-radius: 50%;
+  left: 0.15rem;
+  top: 0.45rem;
+  height: 0.6rem;
+  width: 0.6rem;
+  z-index: 1;
+}
+.dates-dot.dates-bg-today {
+  left: 0;
+  top: 0.15rem;
+  height: 0.9rem;
+  width: 0.9rem;
+}
+
+.dates-line-bottom {
+  display: inline-block;
+  position: absolute;
+  top: 1.05rem;
+  bottom: 0;
+  left: 0.45rem;
+  z-index: 0;
+}
+
+.dates-bg-today {
+  background: #ffdb87;
+}
+
+.courseDateWrapper {
+  margin-top: 32px !important;
+  margin-bottom: 24px !important;
+}
+.courseDateWrapper .h2 {
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 700;
+  color: #111827;
+}
+.courseDateWrapper .dateFormat {
+  color: #111827;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 0 !important;
+}
+.courseDateWrapper .dateFormat .todayStatus {
+  background-color: #d1fae5 !important;
+  color: #273f2f !important;
+  border-radius: 100px !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  line-height: 16px !important;
+  padding: 2px 10px !important;
+  margin-left: 43px !important;
+}
+.courseDateWrapper .courseStatus {
+  color: #515661 !important;
+  font-size: 14px;
+  line-height: 20px;
+}
+.courseDateWrapper .courseStatus .small .font-weight-bold {
+  font-weight: 400 !important;
+}/*# sourceMappingURL=Day.css.map */

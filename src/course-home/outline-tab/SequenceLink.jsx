@@ -86,15 +86,15 @@ const SequenceLink = ({
   );
 
   return (
-    <li>
-      <div className={classNames('', { 'mt-2 pt-2 border-top border-light': !first })}>
-        <div className="row w-100 m-0">
+    <li className='sub-section-list-item'>
+      <div className={classNames('', { '': !first })}>
+        <div className="row w-100 m-0 sub-section-wrapper">
           <div className="col-auto p-0">
             {complete ? (
               <FontAwesomeIcon
                 icon={fasCheckCircle}
                 fixedWidth
-                className="float-left text-success mt-1"
+                className="float-left text-success"
                 aria-hidden={complete}
                 title={intl.formatMessage(messages.completedAssignment)}
               />
@@ -102,18 +102,18 @@ const SequenceLink = ({
               <FontAwesomeIcon
                 icon={farCheckCircle}
                 fixedWidth
-                className="float-left text-gray-400 mt-1"
+                className="float-left text-gray-400"
                 aria-hidden={complete}
                 title={intl.formatMessage(messages.incompleteAssignment)}
               />
             )}
           </div>
-          <div className="col-10 p-0 ml-3 text-break">
+          <div className="col-10 p-0 text-break inner-section-text">
             <span className="align-middle">{displayTitle}</span>
             <span className="sr-only">
               , {intl.formatMessage(complete ? messages.completedAssignment : messages.incompleteAssignment)}
             </span>
-            <EffortEstimate className="ml-3 align-middle" block={sequence} />
+            <EffortEstimate className=" align-middle" block={sequence} />
           </div>
         </div>
         {hideFromTOC && (

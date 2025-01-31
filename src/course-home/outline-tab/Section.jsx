@@ -44,13 +44,13 @@ const Section = ({
   }, []);
 
   const sectionTitle = (
-    <div className="d-flex row w-100 m-0">
+    <div className="d-flex row w-100 m-0 course-section-wrapper">
       <div className="col-auto p-0">
         {complete ? (
           <FontAwesomeIcon
             icon={fasCheckCircle}
             fixedWidth
-            className="float-left mt-1 text-success"
+            className="float-left text-success icon-svg"
             aria-hidden="true"
             title={intl.formatMessage(messages.completedSection)}
           />
@@ -58,14 +58,14 @@ const Section = ({
           <FontAwesomeIcon
             icon={farCheckCircle}
             fixedWidth
-            className="float-left mt-1 text-gray-400"
+            className="float-left text-gray-400 icon-svg"
             aria-hidden="true"
             title={intl.formatMessage(messages.incompleteSection)}
           />
         )}
       </div>
-      <div className="col-7 ml-3 p-0 font-weight-bold text-dark-500">
-        <span className="align-middle col-6">{title}</span>
+      <div className="col-7 p-0 font-weight-bold text-dark-500 section-heading">
+        <span className="align-middle col-6 p-0">{title}</span>
         <span className="sr-only">
           , {intl.formatMessage(complete ? messages.completedSection : messages.incompleteSection)}
         </span>
@@ -110,7 +110,7 @@ const Section = ({
           />
         )}
       >
-        <ol className="list-unstyled">
+        <ol className="list-unstyled ">
           {sequenceIds.map((sequenceId, index) => (
             <SequenceLink
               key={sequenceId}

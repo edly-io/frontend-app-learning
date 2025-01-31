@@ -42,7 +42,7 @@ const BookmarkButton = ({
   return (
     <StatefulButton
       variant="link"
-      className="px-1 ml-n1 btn-sm text-primary-500"
+      className="px-1 ml-n1 btn-sm dark-black-color"
       onClick={toggleBookmark}
       state={state}
       disabledStates={['defaultProcessing', 'bookmarkedProcessing']}

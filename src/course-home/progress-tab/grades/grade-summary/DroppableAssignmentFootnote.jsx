@@ -15,7 +15,7 @@ const DroppableAssignmentFootnote = ({ footnotes, intl }) => {
     gradesFeatureIsFullyLocked,
   } = useModel('progress', courseId);
   return (
-    <>
+    <div className='px-2'>
       <span id="grade-summary-footnote-label" className="sr-only">{intl.formatMessage(messages.footnotesTitle)}</span>
       <ul className="list-unstyled mt-2">
         {footnotes.map((footnote, index) => (
@@ -35,7 +35,7 @@ const DroppableAssignmentFootnote = ({ footnotes, intl }) => {
           </li>
         ))}
       </ul>
-    </>
+    </div>
   );
 };
 

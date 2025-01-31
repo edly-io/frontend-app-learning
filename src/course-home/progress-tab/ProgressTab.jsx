@@ -35,16 +35,18 @@ const ProgressTab = () => {
   return (
     <>
       <ProgressHeader />
-      <div className="row w-100 m-0">
+      <div className="row w-100 m-0 progressWrapper">
         {/* Main body */}
         <div className="col-12 col-md-8 p-0">
           {!disableProgressGraph && <CourseCompletion />}
           {!wideScreen && <CertificateStatus />}
           <CourseGrade />
-          <div className={`grades my-4 p-4 rounded raised-card ${applyLockedOverlay}`} aria-hidden={gradesFeatureIsFullyLocked}>
+          <section className={`grades my-4  ${applyLockedOverlay}`} aria-hidden={gradesFeatureIsFullyLocked}>
             <GradeSummary />
-            <DetailedGrades />
-          </div>
+          </section>
+          <section className='text-dark-700 my-4 rounded raised-card'>
+          <DetailedGrades />
+          </section>
         </div>
 
         {/* Side panel */}
