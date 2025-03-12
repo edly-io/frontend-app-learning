@@ -1,25 +1,27 @@
-import React from "react";
-import PropTypes from "prop-types";
-import classNames from "classnames";
-import { useSelector } from "react-redux";
+import React from 'react';
+import PropTypes from 'prop-types';
+import classNames from 'classnames';
+import { useSelector } from 'react-redux';
 import {
   FormattedDate,
   FormattedTime,
   injectIntl,
   intlShape,
-} from "@edx/frontend-platform/i18n";
-import { Tooltip, OverlayTrigger } from "@openedx/paragon";
-import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+} from '@edx/frontend-platform/i18n';
+import { Tooltip, OverlayTrigger } from '@openedx/paragon';
+import { faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
-import { useModel } from "../../../generic/model-store";
+import { useModel } from '../../../generic/model-store';
 
-import { getBadgeListAndColor } from "./badgelist";
-import { isLearnerAssignment } from "../utils";
+import { getBadgeListAndColor } from './badgelist';
+import { isLearnerAssignment } from '../utils';
 
-const Day = ({ date, first, intl, items, last }) => {
+const Day = ({
+  date, first, intl, items, last,
+}) => {
   const { courseId } = useSelector((state) => state.courseHome);
-  const { userTimezone } = useModel("courseHomeMeta", courseId);
+  const { userTimezone } = useModel('courseHomeMeta', courseId);
 
   const timezoneFormatArgs = userTimezone ? { timeZone: userTimezone } : {};
 
@@ -33,7 +35,7 @@ const Day = ({ date, first, intl, items, last }) => {
       )}
 
       {/* Dot */}
-      <div className={classNames(color, "dates-dot border border-gray-900")} />
+      <div className={classNames(color, 'dates-dot border border-gray-900')} />
       {/* Bottom Line */}
       {!last && (
         <div className="dates-line-bottom border-1 border-left border-gray-900 bg-gray-900" />
@@ -42,7 +44,7 @@ const Day = ({ date, first, intl, items, last }) => {
       {/* Content */}
       <div className="d-inline-block ml-3 pl-2">
         <div
-          className="row w-100 m-0 mb-1 align-items-center dateFormat"
+          className="row w-100 m-0 mb-1 align-items-center"
           data-testid="dates-header"
         >
           <FormattedDate
@@ -60,10 +62,10 @@ const Day = ({ date, first, intl, items, last }) => {
             date,
             intl,
             item,
-            items
+            items,
           );
 
-          const showDueDateTime = item.dateType === "assignment-due-date";
+          const showDueDateTime = item.dateType === 'assignment-due-date';
           const showLink = item.link && isLearnerAssignment(item);
           const title = showLink ? (
             <u>
@@ -74,14 +76,13 @@ const Day = ({ date, first, intl, items, last }) => {
           ) : (
             item.title
           );
-          const available =
-            item.learnerHasAccess && (item.link || !isLearnerAssignment(item));
-          const textColor = available ? "text-primary-700" : "text-gray-500";
+          const available = item.learnerHasAccess && (item.link || !isLearnerAssignment(item));
+          const textColor = available ? 'text-primary-700' : 'text-gray-500';
 
           return (
             <div
               key={item.title + item.date}
-              className={classNames(textColor, "small courseStatus")}
+              className={classNames(textColor, 'small courseStatus')}
               data-testid="dates-item"
             >
               <div>
@@ -139,7 +140,7 @@ Day.propTypes = {
       learnerHasAccess: PropTypes.bool,
       link: PropTypes.string,
       title: PropTypes.string,
-    })
+    }),
   ).isRequired,
   last: PropTypes.bool,
 };

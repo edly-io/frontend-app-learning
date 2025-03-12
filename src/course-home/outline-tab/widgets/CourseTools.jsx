@@ -13,15 +13,13 @@ import { faNewspaper } from '@fortawesome/free-regular-svg-icons';
 import messages from '../messages';
 import { useModel } from '../../../generic/model-store';
 import LaunchCourseHomeTourButton from '../../../product-tours/newUserCourseHomeTour/LaunchCourseHomeTourButton';
+import { ReactComponent as BookmarkIcon } from './bookmark-icon.svg';
+import { ReactComponent as UpdateIcon } from './update-icon.svg';
 
 const CourseTools = ({ intl }) => {
-  const {
-    courseId,
-  } = useSelector(state => state.courseHome);
+  const { courseId } = useSelector(state => state.courseHome);
   const { org } = useModel('courseHomeMeta', courseId);
-  const {
-    courseTools,
-  } = useModel('outline', courseId);
+  const { courseTools } = useModel('outline', courseId);
 
   if (courseTools.length === 0) {
     return null;
@@ -36,7 +34,7 @@ const CourseTools = ({ intl }) => {
     const { administrator } = getAuthenticatedUser();
     sendTrackingLogEvent('edx.course.tool.accessed', {
       ...eventProperties,
-      course_id: courseId, // should only be courserun_key, but left as-is for historical reasons
+      course_id: courseId,
       is_staff: administrator,
       tool_name: analyticsId,
     });
@@ -61,18 +59,34 @@ const CourseTools = ({ intl }) => {
     }
   };
 
+  const renderSVGIcon = (svgIconClasses) => {
+    switch (svgIconClasses) {
+      case 'edx.bookmarks':
+        return <BookmarkIcon className="me-2" />;
+      case 'edx.updates':
+        return <UpdateIcon className="me-2" />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <section className="mb-4">
       <h2 className="h4 heading">{intl.formatMessage(messages.tools)}</h2>
       <ul className="list-unstyled">
-        {courseTools.map((courseTool) => (
-          <li key={courseTool.analyticsId} className="small">
-            <a href={courseTool.url} onClick={() => logClick(courseTool.analyticsId)}>
-              <FontAwesomeIcon icon={renderIcon(courseTool.analyticsId)} className="mr-2" fixedWidth />
-              {courseTool.title}
-            </a>
-          </li>
-        ))}
+        {courseTools.map((courseTool) => {
+          const svgIcon = renderSVGIcon(courseTool.analyticsId);
+          const faIcon = renderIcon(courseTool.analyticsId);
+
+          return (
+            <li key={courseTool.analyticsId} className="small">
+              <a href={courseTool.url} onClick={() => logClick(courseTool.analyticsId)}>
+                {svgIcon || (faIcon && <FontAwesomeIcon icon={faIcon} fixedWidth className="me-2" />)}
+                {courseTool.title}
+              </a>
+            </li>
+          );
+        })}
         <li className="small" id="courseHome-launchTourLink">
           <LaunchCourseHomeTourButton />
         </li>

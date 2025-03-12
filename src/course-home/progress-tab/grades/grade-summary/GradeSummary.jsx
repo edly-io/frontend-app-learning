@@ -25,9 +25,9 @@ const GradeSummary = () => {
   return (
     <>
       <GradeSummaryHeader allOfSomeAssignmentTypeIsLocked={allOfSomeAssignmentTypeIsLocked} />
-    <div className="rounded raised-card w-100">
-      <GradeSummaryTable setAllOfSomeAssignmentTypeIsLocked={setAllOfSomeAssignmentTypeIsLocked} />
-    </div>
+      <div className="rounded raised-card w-100">
+        <GradeSummaryTable setAllOfSomeAssignmentTypeIsLocked={setAllOfSomeAssignmentTypeIsLocked} />
+      </div>
     </>
 
   );

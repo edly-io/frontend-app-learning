@@ -124,7 +124,7 @@ const OutlineTab = ({ intl }) => {
   }, [location.search]);
 
   return (
-    <div className='course-main-wrapper'>
+    <div>
       <div data-learner-type={learnerType} className="row w-100 mx-0 justify-content-between">
         <div className="col-12 col-sm-auto p-0">
           <div role="heading" aria-level="1" className="h2 course-main-heading">{title}</div>
@@ -161,7 +161,7 @@ const OutlineTab = ({ intl }) => {
           <WelcomeMessage courseId={courseId} />
           {rootCourseId && (
             <>
-              <div className="row w-100 m-0 mb-3 justify-content-end expendWrapper">
+              <div className="row w-100 m-0 mb-3 justify-content-end">
                 <div className="col-12 col-md-auto p-0">
                   <Button variant="outline-primary" block onClick={() => { setExpandAll(!expandAll); }}>
                     {expandAll ? intl.formatMessage(messages.collapseAll) : intl.formatMessage(messages.expandAll)}

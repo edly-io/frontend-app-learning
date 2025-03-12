@@ -19,7 +19,7 @@ const SidebarTriggers = () => {
         const isActive = sidebarId === currentSidebar;
         return (
           <div
-            className={classNames({ '': !isMobileView, 'border-purple-color sidebar-active': isActive })}
+            className={classNames({ '': !isMobileView, 'sidebar-active': isActive })}
             style={{ borderBottom: '2px solid', borderColor: isActive ? 'inherit' : 'transparent' }}
             key={sidebarId}
           >

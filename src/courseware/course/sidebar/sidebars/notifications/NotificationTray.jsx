@@ -93,7 +93,7 @@ const NotificationTray = ({ intl }) => {
             setupgradeNotificationCurrentState={setUpgradeNotificationCurrentState}
           />
         ) : (
-          <p className="p-3 small dark-black-color">{intl.formatMessage(messages.noNotificationsMessage)}</p>
+          <p className="p-3 small ">{intl.formatMessage(messages.noNotificationsMessage)}</p>
         )}
       </div>
     </SidebarBase>

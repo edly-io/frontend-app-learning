@@ -52,50 +52,62 @@ const InstructorToolbar = (props) => {
     return () => setDidMount(false);
   });
 
-  const {
-    courseId,
-    unitId,
-    tab,
-  } = props;
+  const { courseId, unitId, tab } = props;
 
   const urlInsights = getInsightsUrl(courseId);
   const urlStudio = getStudioUrl(courseId, unitId);
   const [masqueradeErrorMessage, showMasqueradeError] = useState(null);
 
-  const accessExpirationMasqueradeBanner = useAccessExpirationMasqueradeBanner(courseId, tab);
-  const courseStartDateMasqueradeBanner = useCourseStartMasqueradeBanner(courseId, tab);
+  const accessExpirationMasqueradeBanner = useAccessExpirationMasqueradeBanner(
+    courseId,
+    tab,
+  );
+  const courseStartDateMasqueradeBanner = useCourseStartMasqueradeBanner(
+    courseId,
+    tab,
+  );
 
-  return (!didMount ? null : (
-    <div data-testid="instructor-toolbar">
-      <div className="bg-primary text-white">
-        <div className="container-xl py-3 d-md-flex justify-content-end align-items-start">
-          <div className="align-items-center flex-grow-1 d-md-flex mx-1 my-1">
-            <MasqueradeWidget courseId={courseId} onError={showMasqueradeError} />
+  return !didMount ? null : (
+    // class added
+    <div data-testid="instructor-toolbar" className="instructor">
+      <div className="text-white">
+        <div className="container-xl d-md-flex justify-content-end align-items-center">
+          <div className="align-items-center flex-grow-1 d-md-flex ">
+            <MasqueradeWidget
+              courseId={courseId}
+              onError={showMasqueradeError}
+            />
           </div>
-          {(urlStudio || urlInsights) && (
-            <>
-              <hr className="border-light" />
-              <span className="mr-2 mt-1 col-form-label">View course in:</span>
-            </>
-          )}
-          {urlStudio && (
-            <span className="mx-1 my-1">
-              <a className="btn btn-inverse-outline-primary" href={urlStudio}>Studio</a>
-            </span>
-          )}
-          {urlInsights && (
-            <span className="mx-1 my-1">
-              <a className="btn btn-inverse-outline-primary" href={urlInsights}>Insights</a>
-            </span>
-          )}
+          <div className="view-wrap">
+            {(urlStudio || urlInsights) && (
+              <>
+                {/* <hr className="border-light" /> */}
+                <span className="col-form-label">View course in:</span>
+              </>
+            )}
+            {urlStudio && (
+              <span className="">
+                <a className="btn btn-inverse-outline-primary" href={urlStudio}>
+                  Studio
+                </a>
+              </span>
+            )}
+            {urlInsights && (
+              <span className="">
+                <a
+                  className="btn btn-inverse-outline-primary"
+                  href={urlInsights}
+                >
+                  Insights
+                </a>
+              </span>
+            )}
+          </div>
         </div>
       </div>
       {masqueradeErrorMessage && (
         <div className="container-xl mt-3">
-          <Alert
-            type={ALERT_TYPES.ERROR}
-            dismissible={false}
-          >
+          <Alert type={ALERT_TYPES.ERROR} dismissible={false}>
             {masqueradeErrorMessage}
           </Alert>
         </div>
@@ -108,7 +120,7 @@ const InstructorToolbar = (props) => {
         }}
       />
     </div>
-  ));
+  );
 };
 
 InstructorToolbar.propTypes = {

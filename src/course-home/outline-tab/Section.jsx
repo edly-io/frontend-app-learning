@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { injectIntl, intlShape } from '@edx/frontend-platform/i18n';
 import { Collapsible, IconButton, Icon } from '@openedx/paragon';
-import { faCheckCircle as fasCheckCircle, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
-import { faCheckCircle as farCheckCircle } from '@fortawesome/free-regular-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faMinus,
+  faPlus,
+} from '@fortawesome/free-solid-svg-icons';
 
 import { DisabledVisible } from '@openedx/paragon/icons';
 import SequenceLink from './SequenceLink';
@@ -14,22 +15,13 @@ import genericMessages from '../../generic/messages';
 import messages from './messages';
 
 const Section = ({
-  courseId,
-  defaultOpen,
-  expand,
-  intl,
-  section,
+  courseId, defaultOpen, expand, intl, section,
 }) => {
   const {
-    complete,
-    sequenceIds,
-    title,
-    hideFromTOC,
+    complete, sequenceIds, title, hideFromTOC,
   } = section;
   const {
-    courseBlocks: {
-      sequences,
-    },
+    courseBlocks: { sequences },
   } = useModel('outline', courseId);
 
   const [open, setOpen] = useState(defaultOpen);
@@ -40,47 +32,86 @@ const Section = ({
 
   useEffect(() => {
     setOpen(defaultOpen);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const sectionTitle = (
     <div className="d-flex row w-100 m-0 course-section-wrapper">
       <div className="col-auto p-0">
         {complete ? (
-          <FontAwesomeIcon
-            icon={fasCheckCircle}
-            fixedWidth
-            className="float-left text-success icon-svg"
-            aria-hidden="true"
+          <svg
+            width="33"
             title={intl.formatMessage(messages.completedSection)}
-          />
-        ) : (
-          <FontAwesomeIcon
-            icon={farCheckCircle}
-            fixedWidth
-            className="float-left text-gray-400 icon-svg"
             aria-hidden="true"
+            className="float-left text-success  "
+            height="33"
+            viewBox="0 0 33 33"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M28.5 16.33C28.5 9.70206 23.1279 4.32996 16.5 4.32996C9.87211 4.32996 4.5 9.70206 4.5 16.33C4.5 22.9565 9.87211 28.33 16.5 28.33C23.1279 28.33 28.5 22.9565 28.5 16.33Z"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M11.8804 16.3304L14.9602 19.4088L21.1171 13.2518"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        ) : (
+          <svg
+            width="33"
             title={intl.formatMessage(messages.incompleteSection)}
-          />
+            aria-hidden="true"
+            className="float-left inComplete "
+            height="33"
+            viewBox="0 0 33 33"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M28.5 16.33C28.5 9.70206 23.1279 4.32996 16.5 4.32996C9.87211 4.32996 4.5 9.70206 4.5 16.33C4.5 22.9565 9.87211 28.33 16.5 28.33C23.1279 28.33 28.5 22.9565 28.5 16.33Z"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M11.8804 16.3304L14.9602 19.4088L21.1171 13.2518"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
         )}
       </div>
       <div className="col-7 p-0 font-weight-bold text-dark-500 section-heading">
         <span className="align-middle col-6 p-0">{title}</span>
         <span className="sr-only">
-          , {intl.formatMessage(complete ? messages.completedSection : messages.incompleteSection)}
+          ,{' '}
+          {intl.formatMessage(
+            complete ? messages.completedSection : messages.incompleteSection,
+          )}
         </span>
       </div>
       {hideFromTOC && (
-      <div className="row">
-        {hideFromTOC && (
-          <span className="small d-flex align-content-end">
-            <Icon className="mr-2" src={DisabledVisible} data-testid="hide-from-toc-section-icon" />
-            <span data-testid="hide-from-toc-section-text">
-              {intl.formatMessage(messages.hiddenSection)}
+        <div className="row">
+          {hideFromTOC && (
+            <span className="small d-flex align-content-end">
+              <Icon
+                className="mr-2"
+                src={DisabledVisible}
+                data-testid="hide-from-toc-section-icon"
+              />
+              <span data-testid="hide-from-toc-section-text">
+                {intl.formatMessage(messages.hiddenSection)}
+              </span>
             </span>
-          </span>
-        )}
-      </div>
+          )}
+        </div>
       )}
     </div>
   );
@@ -92,12 +123,16 @@ const Section = ({
         styling="card-lg"
         title={sectionTitle}
         open={open}
-        onToggle={() => { setOpen(!open); }}
+        onToggle={() => {
+          setOpen(!open);
+        }}
         iconWhenClosed={(
           <IconButton
             alt={intl.formatMessage(messages.openSection)}
             icon={faPlus}
-            onClick={() => { setOpen(true); }}
+            onClick={() => {
+              setOpen(true);
+            }}
             size="sm"
           />
         )}
@@ -105,7 +140,9 @@ const Section = ({
           <IconButton
             alt={intl.formatMessage(genericMessages.close)}
             icon={faMinus}
-            onClick={() => { setOpen(false); }}
+            onClick={() => {
+              setOpen(false);
+            }}
             size="sm"
           />
         )}

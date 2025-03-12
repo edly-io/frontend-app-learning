@@ -35,7 +35,7 @@ const ProgressTab = () => {
   return (
     <>
       <ProgressHeader />
-      <div className="row w-100 m-0 progressWrapper">
+      <div className="row w-100 m-0">
         {/* Main body */}
         <div className="col-12 col-md-8 p-0">
           {!disableProgressGraph && <CourseCompletion />}
@@ -44,8 +44,8 @@ const ProgressTab = () => {
           <section className={`grades my-4  ${applyLockedOverlay}`} aria-hidden={gradesFeatureIsFullyLocked}>
             <GradeSummary />
           </section>
-          <section className='text-dark-700 my-4 rounded raised-card'>
-          <DetailedGrades />
+          <section className="text-dark-700 my-4 ">
+            <DetailedGrades />
           </section>
         </div>
 
