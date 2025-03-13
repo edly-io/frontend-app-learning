@@ -3,9 +3,10 @@ import PropTypes from 'prop-types';
 import { StatefulButton } from '@openedx/paragon';
 import { FormattedMessage } from '@edx/frontend-platform/i18n';
 import { useDispatch } from 'react-redux';
-import BookmarkOutlineIcon from './BookmarkOutlineIcon';
-import BookmarkFilledIcon from './BookmarkFilledIcon';
 import { removeBookmark, addBookmark } from './data/thunks';
+
+import FilledBookmarkIcon from './icons/bookmarked-filled-icon.svg';
+import OutlineBookmarkIcon from './icons/bookmarked-outline-icon.svg';
 
 const addBookmarkLabel = (
   <FormattedMessage
@@ -53,10 +54,10 @@ const BookmarkButton = ({
         bookmarkedProcessing: hasBookmarkLabel,
       }}
       icons={{
-        default: <BookmarkOutlineIcon className="text-primary" />,
-        defaultProcessing: <BookmarkOutlineIcon className="text-primary" />,
-        bookmarked: <BookmarkFilledIcon className="text-primary" />,
-        bookmarkedProcessing: <BookmarkFilledIcon className="text-primary" />,
+        default: <img src={OutlineBookmarkIcon} alt="OutlineBookmarkIcon" aria-hidden="true" />,
+        defaultProcessing: <img src={OutlineBookmarkIcon} alt="OutlineBookmarkIcon" aria-hidden="true" />,
+        bookmarked: <img src={FilledBookmarkIcon} alt="FilledBookmarkIcon" aria-hidden="true" />,
+        bookmarkedProcessing: <img src={FilledBookmarkIcon} alt="FilledBookmarkIcon" aria-hidden="true" />,
       }}
     />
   );

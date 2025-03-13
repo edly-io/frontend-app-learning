@@ -2,13 +2,14 @@ import React, { useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { getConfig } from '@edx/frontend-platform';
 import { FormattedMessage } from '@edx/frontend-platform/i18n';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome } from '@fortawesome/free-solid-svg-icons';
 import { useSelector } from 'react-redux';
 import { useToggle, ModalPopup, Menu } from '@openedx/paragon';
 import { Link } from 'react-router-dom';
 import { useModel, useModels } from '../../generic/model-store';
 import JumpNavMenuItem from './JumpNavMenuItem';
+
+import HomeIcon from './home-icon.svg';
+import SeperatorIcon from './seperator-icon.svg';
 
 const CourseBreadcrumb = ({
   content,
@@ -28,7 +29,7 @@ const CourseBreadcrumb = ({
   return (
     <>
       {withSeparator && (
-        <li className="col-auto p-0 mx-2  text-truncate text-nowrap" role="presentation" aria-hidden>.</li>
+        <img src={SeperatorIcon} alt="SeperatorIcon" aria-hidden="true" className="col-auto p-0 mx-2" />
       )}
 
       <li
@@ -162,7 +163,7 @@ const CourseBreadcrumbs = ({
             to={`/course/${courseId}/home`}
             replace
           >
-            <FontAwesomeIcon icon={faHome} className="mr-2" />
+            <img src={HomeIcon} alt="HomeIcon" className="mr-2" />
             <FormattedMessage
               id="learn.breadcrumb.navigation.course.home"
               description="The course home link in breadcrumbs nav"
