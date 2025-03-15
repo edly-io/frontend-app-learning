@@ -43,7 +43,7 @@ const UnitButton = ({
       to={`/course/${courseId}/${sequenceId}/${unitId}`}
     >
       <UnitIcon type={contentType} />
-      {contentType === 'video' && <img src={YoutubeIcon} alt="YoutubeIcon" aria-hidden="true" />}
+      {contentType === 'video' && <img src={YoutubeIcon} className="youtubeIcon" alt="YoutubeIcon" aria-hidden="true" />}
       {showTitle && <span className="unit-title">{title}</span>}
       {showCompletion && complete ? <CompleteIcon size="sm" className="text-success ml-2" /> : null}
       {bookmarked ? (
