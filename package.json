@@ -31,7 +31,7 @@
     "url": "https://github.com/openedx/frontend-app-learning/issues"
   },
   "dependencies": {
-    "@edunext/frontend-essentials": "^4.3.0",
+    "@edunext/frontend-essentials": "^4.4.0",
     "@edx/brand": "github:nelc/brand-openedx#open-release/redwood.nelp",
     "@edx/frontend-component-footer": "npm:@edunext/frontend-component-footer@13.0.4-alpha.1",
     "@edx/frontend-component-header": "npm:@edunext/frontend-component-header@5.0.2-alpha.1-nelp.7",
