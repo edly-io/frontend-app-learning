@@ -1,6 +1,5 @@
 import { injectIntl, intlShape } from '@edx/frontend-platform/i18n';
-import { Icon } from '@openedx/paragon';
-import { WatchOutline } from '@openedx/paragon/icons';
+import BellIcon from './ringtone-icon.svg';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import React from 'react';
@@ -13,7 +12,7 @@ const NotificationIcon = ({
   notificationColor,
 }) => (
   <>
-    <Icon src={WatchOutline} className="m-0 m-auto" alt={intl.formatMessage(messages.openNotificationTrigger)} />
+    <img src={BellIcon} alt={intl.formatMessage(messages.openNotificationTrigger)} />
     {status === 'active'
       ? (
         <span
