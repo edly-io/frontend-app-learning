@@ -4,24 +4,24 @@
   }
 
   .grade-bar__base {
-    fill: var(--pgn-color-light-300);
+    fill: #f3f3f3;
   }
 
   .grade-bar__divider {
-    fill: var(--pgn-color-primary-500);
+    fill: #4600c7;
     width: 1px;
   }
 
   .grade-bar--passing {
-    fill: var(--pgn-color-primary-500);
+    fill: #4600c7;
   }
 
   .grade-bar--current-passing {
-    fill: var(--pgn-color-success-500);
+    fill: green;
   }
 
   .grade-bar--current-non-passing {
-    fill: var(--pgn-color-accent-b);
+    fill: yellow;
   }
 }
 
@@ -31,22 +31,45 @@
 
 #minimum-grade-tooltip {
   .arrow::after {
-    border-bottom-color: var(--pgn-color-primary-500);
+    border-bottom-color: #bbbbbc;
+  }
+
+  background: #bbbbbc !important;
+  filter: unset !important;
+  border: 1px solid #bbbbbc !important;
+  .popover-body {
+    padding: 8px 11px;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: #fff !important;
   }
 }
 
 #passing-grade-tooltip {
-  .arrow::after {
-    border-top-color: var(--pgn-color-success-500);
-  }
+  background: green;
 
-  background: var(--pgn-color-success-500);
+  .arrow::after {
+    border-top-color: green;
+  }
+  .popover-body {
+    padding: 8px 11px;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: #fff !important;
+  }
 }
 
 #non-passing-grade-tooltip {
   .arrow::after {
-    border-top-color: var(--pgn-color-accent-b);
+    border-top-color: #4600c7;
   }
 
-  background: var(--pgn-color-accent-b);
+  background: #4600c7;
+  filter: unset !important;
+  .popover-body {
+    padding: 8px 11px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff !important;
+  }
 }

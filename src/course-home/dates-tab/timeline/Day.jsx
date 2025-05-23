@@ -48,7 +48,7 @@ const Day = ({
 
       {/* Content */}
       <div className="d-inline-block ml-3 pl-2">
-        <div className="row w-100 m-0 mb-1 align-items-center text-primary-700" data-testid="dates-header">
+        <div className="row w-100 m-0 mb-1 align-items-center" data-testid="dates-header">
           <FormattedDate
             value={date}
             day="numeric"
@@ -69,7 +69,7 @@ const Day = ({
           const textColor = available ? 'text-primary-700' : 'text-gray-500';
 
           return (
-            <div key={item.title + item.date} className={classNames(textColor, 'small pb-1')} data-testid="dates-item">
+            <div key={item.title + item.date} className={classNames(textColor, 'small courseStatus')} data-testid="dates-item">
               <div>
                 <span className="small">
                   <span className="font-weight-bold">{item.assignmentType && `${item.assignmentType}: `}{title}</span>

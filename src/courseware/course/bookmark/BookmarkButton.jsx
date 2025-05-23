@@ -3,8 +3,8 @@ import PropTypes from 'prop-types';
 import { StatefulButton } from '@openedx/paragon';
 import { FormattedMessage } from '@edx/frontend-platform/i18n';
 import { useDispatch } from 'react-redux';
-import BookmarkOutlineIcon from './BookmarkOutlineIcon';
-import BookmarkFilledIcon from './BookmarkFilledIcon';
+import BookmarkOutlineIcon from './icons/bookmarked-outline-icon.svg';
+import BookmarkFilledIcon from './icons/bookmarked-filled-icon.svg';
 import { removeBookmark, addBookmark } from './data/thunks';
 
 const addBookmarkLabel = (
@@ -42,7 +42,7 @@ const BookmarkButton = ({
   return (
     <StatefulButton
       variant="link"
-      className="px-1 ml-n1 btn-sm text-primary-500"
+      className="px-1 ml-n1 btn-sm "
       onClick={toggleBookmark}
       state={state}
       disabledStates={['defaultProcessing', 'bookmarkedProcessing']}
@@ -53,10 +53,10 @@ const BookmarkButton = ({
         bookmarkedProcessing: hasBookmarkLabel,
       }}
       icons={{
-        default: <BookmarkOutlineIcon className="text-primary" />,
-        defaultProcessing: <BookmarkOutlineIcon className="text-primary" />,
-        bookmarked: <BookmarkFilledIcon className="text-primary" />,
-        bookmarkedProcessing: <BookmarkFilledIcon className="text-primary" />,
+        default: <img src={BookmarkOutlineIcon} alt="BookmarkOutlineIcon" aria-hidden="true" />,
+        defaultProcessing: <img src={BookmarkOutlineIcon} alt="BookmarkOutlineIcon" aria-hidden="true" />,
+        bookmarked: <img src={BookmarkFilledIcon} alt="BookmarkFilledIcon" aria-hidden="true" />,
+        bookmarkedProcessing: <img src={BookmarkFilledIcon} alt="BookmarkFilledIcon" aria-hidden="true" />,
       }}
     />
   );

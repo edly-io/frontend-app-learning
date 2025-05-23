@@ -39,7 +39,7 @@ const DetailedGradesTable = ({ intl }) => {
       }));
 
       return (
-        <div className="my-3" key={`${chapter.displayName}-grades-table`}>
+        <div key={`${chapter.displayName}-grades-table`}>
           <DataTable
             data={detailedGradesData}
             itemCount={detailedGradesData.length}

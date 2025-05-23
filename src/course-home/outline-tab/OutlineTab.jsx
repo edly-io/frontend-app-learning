@@ -128,9 +128,9 @@ const OutlineTab = ({ intl }) => {
 
   return (
     <>
-      <div data-learner-type={learnerType} className="row w-100 mx-0 my-3 justify-content-between">
+      <div data-learner-type={learnerType} className="row w-100 mx-0 justify-content-between">
         <div className="col-12 col-sm-auto p-0">
-          <div role="heading" aria-level="1" className="h2">{title}</div>
+          <div role="heading" aria-level="1" className="h2 course-main-heading">{title}</div>
         </div>
       </div>
       <div className="row course-outline-tab">
@@ -171,7 +171,7 @@ const OutlineTab = ({ intl }) => {
                   </Button>
                 </div>
               </div>
-              <ol id="courseHome-outline" className="list-unstyled">
+              <ol id="courseHome-outline" className="list-unstyled course-section-list">
                 {courses[rootCourseId].sectionIds.map((sectionId) => (
                   <Section
                     key={sectionId}
@@ -186,7 +186,7 @@ const OutlineTab = ({ intl }) => {
           )}
         </div>
         {rootCourseId && (
-          <div className="col col-12 col-md-4">
+          <div className="col col-12 col-md-4 course-sidebar">
             <ProctoringInfoPanel />
             { /** Defer showing the goal widget until the ProctoringInfoPanel has resolved or has been determined as
              disabled to avoid components bouncing around too much as screen is rendered */ }

@@ -75,7 +75,11 @@ const Course = ({
       <Helmet>
         <title>{`${pageTitleBreadCrumbs.join(' | ')} | ${getConfig().SITE_NAME}`}</title>
       </Helmet>
-      <div className="position-relative d-flex align-items-xl-center mb-4 mt-1 flex-column flex-xl-row">
+      <div className="w-100 d-flex align-items-center actionBtn">
+        <CourseOutlineTrigger isMobileView />
+        {isNewDiscussionSidebarViewEnabled ? <NewSidebarTriggers /> : <SidebarTriggers /> }
+      </div>
+      <div className="position-relative d-flex align-items-xl-center mt-2 flex-column flex-xl-row">
         {navigationDisabled || (
         <>
           <CourseBreadcrumbs
@@ -99,10 +103,6 @@ const Course = ({
             />
           </>
         )}
-        <div className="w-100 d-flex align-items-center">
-          <CourseOutlineTrigger isMobileView />
-          {isNewDiscussionSidebarViewEnabled ? <NewSidebarTriggers /> : <SidebarTriggers /> }
-        </div>
       </div>
 
       <AlertList topic="sequence" />

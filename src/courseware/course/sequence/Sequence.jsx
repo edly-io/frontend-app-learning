@@ -175,7 +175,8 @@ const Sequence = ({
       <div className="sequence-container d-inline-flex flex-row w-100">
         <CourseOutlineTrigger />
         <CourseOutlineTray />
-        <div className="sequence w-100">
+      <div className="w-100">
+        <div className="sequence">
           {!isEnabledOutlineSidebar && (
             <div className="sequence-navigation-container">
               <SequenceNavigation
@@ -208,6 +209,10 @@ const Sequence = ({
             {unitHasLoaded && renderUnitNavigation(false)}
           </div>
         </div>
+        {sequenceStatus === 'loaded' && (
+          <CourseLicense license={license || undefined} />
+        )}
+        </div>
         {isNewDiscussionSidebarViewEnabled ? <NewSidebar /> : <Sidebar />}
       </div>
       <SequenceContainerSlot courseId={courseId} unitId={unitId} />
@@ -227,7 +232,6 @@ const Sequence = ({
           {isEnabledOutlineSidebar && renderUnitNavigation(true)}
           {defaultContent}
         </SequenceExamWrapper>
-        <CourseLicense license={license || undefined} />
       </div>
     );
   }

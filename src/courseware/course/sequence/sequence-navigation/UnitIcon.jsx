@@ -2,15 +2,12 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faVideo, faBook, faEdit, faTasks, faLock,
+  faBook, faEdit, faTasks, faLock,
 } from '@fortawesome/free-solid-svg-icons';
 
 const UnitIcon = ({ type }) => {
   let icon = null;
   switch (type) {
-    case 'video':
-      icon = faVideo;
-      break;
     case 'other':
       icon = faBook;
       break;

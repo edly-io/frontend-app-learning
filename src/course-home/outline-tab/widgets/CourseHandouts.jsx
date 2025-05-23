@@ -21,7 +21,7 @@ const CourseHandouts = ({ intl }) => {
 
   return (
     <section className="mb-4">
-      <h2 className="h4">{intl.formatMessage(messages.handouts)}</h2>
+      <h2 className="h4 heading">{intl.formatMessage(messages.handouts)}</h2>
       <LmsHtmlFragment
         className="small"
         html={handoutsHtml}

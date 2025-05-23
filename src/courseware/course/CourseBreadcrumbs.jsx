@@ -2,13 +2,14 @@ import React, { useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { getConfig } from '@edx/frontend-platform';
 import { FormattedMessage } from '@edx/frontend-platform/i18n';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome } from '@fortawesome/free-solid-svg-icons';
 import { useSelector } from 'react-redux';
 import { useToggle, ModalPopup, Menu } from '@openedx/paragon';
 import { Link } from 'react-router-dom';
 import { useModel, useModels } from '../../generic/model-store';
 import JumpNavMenuItem from './JumpNavMenuItem';
+
+import HomeIcon from './home-icon.svg';
+import SeperatorIcon from './seperator-icon.svg';
 
 const CourseBreadcrumb = ({
   content,
@@ -28,7 +29,7 @@ const CourseBreadcrumb = ({
   return (
     <>
       {withSeparator && (
-        <li className="col-auto p-0 mx-2 text-primary-500 text-truncate text-nowrap" role="presentation" aria-hidden>/</li>
+        <img src={SeperatorIcon} alt="SeperatorIcon" aria-hidden="true" className="col-auto p-0 mx-2" />
       )}
 
       <li
@@ -41,7 +42,6 @@ const CourseBreadcrumb = ({
       >
         {showRegularLink ? (
           <Link
-            className="text-primary-500"
             to={
               defaultContent.sequences.length
                 ? `/course/${courseId}/${defaultContent.sequences[0].id}`
@@ -54,7 +54,7 @@ const CourseBreadcrumb = ({
           <>
             {
               // eslint-disable-next-line
-              <a className="text-primary-500" onClick={open} ref={setTarget}>
+              <a onClick={open} ref={setTarget}>
                 {defaultContent.label}
               </a>
             }
@@ -154,15 +154,15 @@ const CourseBreadcrumbs = ({
   }, [courseStatus, sequenceStatus, allSequencesInSections]);
 
   return (
-    <nav aria-label="breadcrumb" className="d-inline-block col-sm-10 mb-3">
+    <nav aria-label="breadcrumb" className="d-inline-block col-sm-12">
       <ol className="list-unstyled d-flex flex-nowrap align-items-center m-0">
         <li className="list-unstyled col-auto m-0 p-0">
           <Link
-            className="flex-shrink-0 text-primary"
+            className="flex-shrink-0"
             to={`/course/${courseId}/home`}
             replace
           >
-            <FontAwesomeIcon icon={faHome} className="mr-2" />
+            <img src={HomeIcon} alt="HomeIcon" className="mr-2" />
             <FormattedMessage
               id="learn.breadcrumb.navigation.course.home"
               description="The course home link in breadcrumbs nav"

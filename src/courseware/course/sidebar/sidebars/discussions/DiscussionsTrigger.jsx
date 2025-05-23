@@ -1,7 +1,5 @@
 import { ensureConfig, getConfig } from '@edx/frontend-platform';
 import { injectIntl, intlShape } from '@edx/frontend-platform/i18n';
-import { Icon } from '@openedx/paragon';
-import { QuestionAnswer } from '@openedx/paragon/icons';
 import PropTypes from 'prop-types';
 import { useContext, useEffect, useMemo } from 'react';
 import { useDispatch } from 'react-redux';
@@ -11,6 +9,8 @@ import { getCourseDiscussionTopics } from '../../../../data/thunks';
 import SidebarTriggerBase from '../../common/TriggerBase';
 import SidebarContext from '../../SidebarContext';
 import messages from './messages';
+
+import ChatIcon from './chat-icon.svg';
 
 ensureConfig(['DISCUSSIONS_MFE_BASE_URL']);
 export const ID = WIDGETS.DISCUSSIONS;
@@ -45,7 +45,7 @@ const DiscussionsTrigger = ({
 
   return (
     <SidebarTriggerBase onClick={onClick} ariaLabel={intl.formatMessage(messages.openDiscussionsTrigger)}>
-      <Icon src={QuestionAnswer} className="m-0 m-auto" />
+      <img src={ChatIcon} alt="ChatIcon" aria-hidden="true" />
     </SidebarTriggerBase>
   );
 };
