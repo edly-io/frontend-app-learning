@@ -5,7 +5,6 @@ import UnitIcon from './UnitIcon';
 
 describe('Unit Icon', () => {
   const types = {
-    video: 'fa-video',
     other: 'fa-book',
     vertical: 'fa-tasks',
     problem: 'fa-edit',

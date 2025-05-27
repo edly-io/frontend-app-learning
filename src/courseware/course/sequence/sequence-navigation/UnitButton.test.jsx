@@ -50,9 +50,9 @@ describe('Unit Button', () => {
 
   it('shows completion for completed unit', () => {
     const { container } = render(<UnitButton {...mockData} unitId={completedUnit.id} />, { wrapWithRouter: true });
-    const buttonIcons = container.querySelectorAll('svg');
-    expect(buttonIcons).toHaveLength(2);
-    expect(buttonIcons[1]).toHaveClass('fa-check');
+    const buttonIcons = container.querySelectorAll('svg, img');
+    expect(buttonIcons).toHaveLength(3);
+    expect(buttonIcons[1]).toHaveClass('youtubeIcon');
   });
 
   it('hides completion', () => {
@@ -71,9 +71,9 @@ describe('Unit Button', () => {
 
   it('shows bookmark', () => {
     const { container } = render(<UnitButton {...mockData} unitId={bookmarkedUnit.id} />, { wrapWithRouter: true });
-    const buttonIcons = container.querySelectorAll('svg');
+    const buttonIcons = container.querySelectorAll('svg, img');
     expect(buttonIcons).toHaveLength(3);
-    expect(buttonIcons[2]).toHaveClass('fa-bookmark');
+    expect(buttonIcons[2]).toHaveClass('text-primary small position-absolute');
   });
 
   it('handles the click', () => {

@@ -319,7 +319,7 @@ describe('Progress Tab', () => {
       await fetchAndRender();
       expect(screen.getByText('locked feature')).toBeInTheDocument();
       expect(screen.getByText('Unlock to view grades and work towards a certificate.')).toBeInTheDocument();
-      expect(screen.getAllByRole('link', 'Unlock now')).toHaveLength(3);
+      expect(screen.getAllByRole('link', 'Unlock now')).toHaveLength(5);
     });
 
     it('sends events on click of upgrade button in locked content header (CourseGradeHeader)', async () => {

@@ -71,7 +71,7 @@ describe('Notification Trigger', () => {
   it('renders notification trigger icon with red dot when notificationStatus is active', async () => {
     const container = renderWithProvider({ notificationStatus: 'active' });
     expect(container).toBeInTheDocument();
-    const buttonIcon = container.querySelectorAll('svg');
+    const buttonIcon = container.querySelectorAll('img');
     expect(buttonIcon).toHaveLength(1);
     expect(screen.getByTestId('notification-dot')).toBeInTheDocument();
   });
@@ -87,7 +87,7 @@ describe('Notification Trigger', () => {
       .toHaveBeenCalledWith(`upgradeNotificationLastSeen.${mockData.courseId}`);
     expect(localStorage.getItem(`upgradeNotificationLastSeen.${mockData.courseId}`))
       .toBe('"sameState"');
-    const buttonIcon = container.querySelectorAll('svg');
+    const buttonIcon = container.querySelectorAll('img');
     expect(buttonIcon)
       .toHaveLength(1);
     expect(screen.queryByRole('notification-dot'))
