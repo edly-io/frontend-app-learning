@@ -140,7 +140,7 @@ const CourseLicense = ({
   const [licenseType, licenseOptions, licenseVersion] = parseLicense(license);
 
   return (
-    <div className="text-right small mt-4  mr-5">
+    <div className="text-right small mt-4 mr-5">
       {licenseType === 'all-rights-reserved' && renderAllRightsReservedLicense()}
       {licenseType === 'creative-commons' && renderCreativeCommonsLicense(
         Object.keys(licenseOptions),

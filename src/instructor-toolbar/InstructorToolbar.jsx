@@ -69,7 +69,7 @@ const InstructorToolbar = (props) => {
     <div data-testid="instructor-toolbar" className="instructor">
       <div className="text-white">
         <div className="container-xl d-md-flex justify-content-end align-items-center">
-          <div className="align-items-center flex-grow-1 d-md-flex ">
+          <div className="align-items-center flex-grow-1 d-md-flex">
             <MasqueradeWidget courseId={courseId} onError={showMasqueradeError} />
           </div>
         <div className="view-wrap">

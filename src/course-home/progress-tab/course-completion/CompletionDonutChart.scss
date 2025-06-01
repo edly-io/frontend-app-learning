@@ -16,7 +16,7 @@
 
 .donut-chart-number {
   font: {
-    family: $font-family-sans-serif;
+    family: var(--pgn-typography-font-family-monospace);
     size: .5rem;
     weight: var(--pgn-typography-font-weight-bold);
   }
@@ -29,7 +29,7 @@
 }
 
 .donut-chart-text {
-  fill: #111827;
+  fill: var(--pgn-color-primary-500);
   -moz-transform: translateY(0.25em);
   -ms-transform: translateY(0.25em);
   -webkit-transform: translateY(0.25em);

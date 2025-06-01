@@ -9,7 +9,6 @@ import { getCourseDiscussionTopics } from '../../../../data/thunks';
 import SidebarTriggerBase from '../../common/TriggerBase';
 import SidebarContext from '../../SidebarContext';
 import messages from './messages';
-
 import ChatIcon from './chat-icon.svg';
 
 ensureConfig(['DISCUSSIONS_MFE_BASE_URL']);

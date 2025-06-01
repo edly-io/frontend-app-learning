@@ -13,6 +13,7 @@ import { Block } from '@openedx/paragon/icons';
 import EffortEstimate from '../../shared/effort-estimate';
 import { useModel } from '../../generic/model-store';
 import messages from './messages';
+import { ReactComponent as CheckCircleIcon } from './check-circle.svg';
 
 const SequenceLink = ({
   id,
@@ -87,55 +88,7 @@ const SequenceLink = ({
       <div className={classNames('', { '': !first })}>
         <div className="row w-100 m-0 sub-section-wrapper">
           <div className="col-auto p-0">
-            {complete ? (
-              <svg
-                width="33"
-                aria-hidden={complete}
-                title={intl.formatMessage(messages.completedAssignment)}
-                className="float-left text-success"
-                height="33"
-                viewBox="0 0 33 33"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M28.5 16.33C28.5 9.70206 23.1279 4.32996 16.5 4.32996C9.87211 4.32996 4.5 9.70206 4.5 16.33C4.5 22.9565 9.87211 28.33 16.5 28.33C23.1279 28.33 28.5 22.9565 28.5 16.33Z"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="M11.8804 16.3304L14.9602 19.4088L21.1171 13.2518"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            ) : (
-              <svg
-                width="33"
-                aria-hidden={complete}
-                title={intl.formatMessage(messages.incompleteAssignment)}
-                className="float-left inComplete"
-                height="33"
-                viewBox="0 0 33 33"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M28.5 16.33C28.5 9.70206 23.1279 4.32996 16.5 4.32996C9.87211 4.32996 4.5 9.70206 4.5 16.33C4.5 22.9565 9.87211 28.33 16.5 28.33C23.1279 28.33 28.5 22.9565 28.5 16.33Z"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="M11.8804 16.3304L14.9602 19.4088L21.1171 13.2518"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            )}
+            <CheckCircleIcon style={{ color: complete ? 'green' : 'gray' }} />
           </div>
           <div className="col-10 p-0 text-break inner-section-text">
             <span className="align-middle">{displayTitle}</span>

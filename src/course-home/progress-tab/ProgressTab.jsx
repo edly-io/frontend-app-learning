@@ -41,10 +41,10 @@ const ProgressTab = () => {
           {!disableProgressGraph && <CourseCompletion />}
           {!wideScreen && <CertificateStatus />}
           <CourseGrade />
-          <section className={`grades my-4  ${applyLockedOverlay}`} aria-hidden={gradesFeatureIsFullyLocked}>
+          <section className={`grades my-4 ${applyLockedOverlay}`} aria-hidden={gradesFeatureIsFullyLocked}>
             <GradeSummary />
           </section>
-          <section className="text-dark-700 my-4 ">
+          <section className="text-dark-700 my-4">
             <DetailedGrades />
           </section>
         </div>

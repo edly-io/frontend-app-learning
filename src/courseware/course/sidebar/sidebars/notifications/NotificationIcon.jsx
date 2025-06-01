@@ -1,10 +1,10 @@
+import React from 'react';
 import { injectIntl, intlShape } from '@edx/frontend-platform/i18n';
-import BellIcon from './ringtone-icon.svg';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import React from 'react';
 
 import messages from '../../../messages';
+import BellIcon from './ringtone-icon.svg';
 
 const NotificationIcon = ({
   intl,

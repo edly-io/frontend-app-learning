@@ -175,7 +175,7 @@ const Sequence = ({
       <div className="sequence-container d-inline-flex flex-row w-100">
         <CourseOutlineTrigger />
         <CourseOutlineTray />
-      <div className="w-100">
+        <div className="w-100">
         <div className="sequence">
           {!isEnabledOutlineSidebar && (
             <div className="sequence-navigation-container">

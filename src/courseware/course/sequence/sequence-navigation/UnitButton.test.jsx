@@ -51,8 +51,8 @@ describe('Unit Button', () => {
   it('shows completion for completed unit', () => {
     const { container } = render(<UnitButton {...mockData} unitId={completedUnit.id} />, { wrapWithRouter: true });
     const buttonIcons = container.querySelectorAll('svg, img');
-    expect(buttonIcons).toHaveLength(3);
-    expect(buttonIcons[1]).toHaveClass('youtubeIcon');
+    expect(buttonIcons).toHaveLength(2);
+    expect(buttonIcons[1]).toHaveClass('fa-check');
   });
 
   it('hides completion', () => {

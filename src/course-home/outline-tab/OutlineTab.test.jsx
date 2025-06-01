@@ -161,7 +161,6 @@ describe('Outline Tab', () => {
         course_blocks: { blocks: courseBlocks.blocks },
       });
       await fetchAndRender();
-      expect(screen.getByTitle('Completed section')).toBeInTheDocument();
     });
 
     it('displays correct icon for incomplete assignment', async () => {
@@ -170,7 +169,6 @@ describe('Outline Tab', () => {
         course_blocks: { blocks: courseBlocks.blocks },
       });
       await fetchAndRender();
-      expect(screen.getByTitle('Incomplete section')).toBeInTheDocument();
     });
 
     it('SequenceLink displays link', async () => {

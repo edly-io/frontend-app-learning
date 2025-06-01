@@ -13,7 +13,7 @@ const SidebarTriggers = () => {
   const isMobileView = useWindowSize().width < breakpoints.small.minWidth;
 
   return (
-    <div className="d-flex ml-auto gap-3" style={{ gap: '10px' }}>
+    <div className="d-flex ml-auto gap-2">
       {SIDEBAR_ORDER.map((sidebarId) => {
         const { Trigger } = SIDEBARS[sidebarId];
         const isActive = sidebarId === currentSidebar;

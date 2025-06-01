@@ -30,7 +30,7 @@ const GradeSummaryTableFooter = ({ intl }) => {
     <DataTable.TableFooter className={`border-top border-primary ${bgColor}`}>
       <div className="row w-100 m-0 align-items-center">
         <div id="weighted-grade-summary" className="col-8 p-0 small">{intl.formatMessage(messages.weightedGradeSummary)}</div>
-        <div data-testid="gradeSummaryFooterTotalWeightedGrade" aria-labelledby="weighted-grade-summary" className="col-4 p-0 text-right font-weight-bold ">{totalGrade}{isLocaleRtl && '\u200f'}%</div>
+        <div data-testid="gradeSummaryFooterTotalWeightedGrade" aria-labelledby="weighted-grade-summary" className="col-4 p-0 text-right font-weight-bold">{totalGrade}{isLocaleRtl && '\u200f'}%</div>
       </div>
     </DataTable.TableFooter>
   );

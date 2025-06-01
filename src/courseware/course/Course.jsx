@@ -77,7 +77,7 @@ const Course = ({
       </Helmet>
       <div className="w-100 d-flex align-items-center actionBtn">
         <CourseOutlineTrigger isMobileView />
-        {isNewDiscussionSidebarViewEnabled ? <NewSidebarTriggers /> : <SidebarTriggers /> }
+        {isNewDiscussionSidebarViewEnabled ? <NewSidebarTriggers /> : <SidebarTriggers />}
       </div>
       <div className="position-relative d-flex align-items-xl-center mt-2 flex-column flex-xl-row">
         {navigationDisabled || (
