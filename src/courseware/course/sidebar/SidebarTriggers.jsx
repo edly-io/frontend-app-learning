@@ -1,6 +1,5 @@
 import { useContext } from 'react';
 import classNames from 'classnames';
-import { breakpoints, useWindowSize } from '@openedx/paragon';
 import SidebarContext from './SidebarContext';
 import { SIDEBAR_ORDER, SIDEBARS } from './sidebars';
 
@@ -9,8 +8,6 @@ const SidebarTriggers = () => {
     toggleSidebar,
     currentSidebar,
   } = useContext(SidebarContext);
-
-  const isMobileView = useWindowSize().width < breakpoints.small.minWidth;
 
   return (
     <div className="d-flex ml-auto gap-2">

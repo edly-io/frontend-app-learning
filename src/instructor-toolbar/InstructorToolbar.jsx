@@ -72,23 +72,23 @@ const InstructorToolbar = (props) => {
           <div className="align-items-center flex-grow-1 d-md-flex">
             <MasqueradeWidget courseId={courseId} onError={showMasqueradeError} />
           </div>
-        <div className="view-wrap">
-          {(urlStudio || urlInsights) && (
-            <>
-              <span className="col-form-label">View course in:</span>
-            </>
-          )}
-          {urlStudio && (
-            <span>
-              <a className="btn btn-inverse-outline-primary" href={urlStudio}>Studio</a>
-            </span>
-          )}
-          {urlInsights && (
-            <span>
-              <a className="btn btn-inverse-outline-primary" href={urlInsights}>Insights</a>
-            </span>
-          )}
-        </div>
+          <div className="view-wrap">
+            {(urlStudio || urlInsights) && (
+              <>
+                <span className="col-form-label">View course in:</span>
+              </>
+            )}
+            {urlStudio && (
+              <span>
+                <a className="btn btn-inverse-outline-primary" href={urlStudio}>Studio</a>
+              </span>
+            )}
+            {urlInsights && (
+              <span>
+                <a className="btn btn-inverse-outline-primary" href={urlInsights}>Insights</a>
+              </span>
+            )}
+          </div>
         </div>
       </div>
       {masqueradeErrorMessage && (

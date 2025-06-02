@@ -176,42 +176,42 @@ const Sequence = ({
         <CourseOutlineTrigger />
         <CourseOutlineTray />
         <div className="w-100">
-        <div className="sequence">
-          {!isEnabledOutlineSidebar && (
-            <div className="sequence-navigation-container">
-              <SequenceNavigation
+          <div className="sequence">
+            {!isEnabledOutlineSidebar && (
+              <div className="sequence-navigation-container">
+                <SequenceNavigation
+                  sequenceId={sequenceId}
+                  unitId={unitId}
+                  nextHandler={() => {
+                    logEvent('edx.ui.lms.sequence.next_selected', 'top');
+                    handleNext();
+                  }}
+                  onNavigate={(destinationUnitId) => {
+                    logEvent('edx.ui.lms.sequence.tab_selected', 'top', destinationUnitId);
+                    handleNavigate(destinationUnitId);
+                  }}
+                  previousHandler={() => {
+                    logEvent('edx.ui.lms.sequence.previous_selected', 'top');
+                    handlePrevious();
+                  }}
+                />
+              </div>
+            )}
+
+            <div className="unit-container flex-grow-1 pt-4">
+              <SequenceContent
+                courseId={courseId}
+                gated={gated}
                 sequenceId={sequenceId}
                 unitId={unitId}
-                nextHandler={() => {
-                  logEvent('edx.ui.lms.sequence.next_selected', 'top');
-                  handleNext();
-                }}
-                onNavigate={(destinationUnitId) => {
-                  logEvent('edx.ui.lms.sequence.tab_selected', 'top', destinationUnitId);
-                  handleNavigate(destinationUnitId);
-                }}
-                previousHandler={() => {
-                  logEvent('edx.ui.lms.sequence.previous_selected', 'top');
-                  handlePrevious();
-                }}
+                unitLoadedHandler={handleUnitLoaded}
               />
+              {unitHasLoaded && renderUnitNavigation(false)}
             </div>
-          )}
-
-          <div className="unit-container flex-grow-1 pt-4">
-            <SequenceContent
-              courseId={courseId}
-              gated={gated}
-              sequenceId={sequenceId}
-              unitId={unitId}
-              unitLoadedHandler={handleUnitLoaded}
-            />
-            {unitHasLoaded && renderUnitNavigation(false)}
           </div>
-        </div>
-        {sequenceStatus === 'loaded' && (
-          <CourseLicense license={license || undefined} />
-        )}
+          {sequenceStatus === 'loaded' && (
+            <CourseLicense license={license || undefined} />
+          )}
         </div>
         {isNewDiscussionSidebarViewEnabled ? <NewSidebar /> : <Sidebar />}
       </div>

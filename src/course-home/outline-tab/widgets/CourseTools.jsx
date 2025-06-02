@@ -89,7 +89,8 @@ const CourseTools = ({ intl }) => {
                 {courseTool.title}
               </a>
             </li>
-          )})}
+          );
+        })}
         <li className="small" id="courseHome-launchTourLink">
           <LaunchCourseHomeTourButton />
         </li>
