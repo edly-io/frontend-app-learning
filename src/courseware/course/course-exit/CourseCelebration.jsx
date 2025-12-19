@@ -258,11 +258,10 @@ const CourseCelebration = () => {
           day: 'numeric',
           ...timezoneFormatArgs,
         });
+        const isValidDate = end && new Date(end).getTime() !== 0;
         message = (
           <>
-            <p>
-              {intl.formatMessage(messages.certificateNotAvailableEndDateBody, { endDate })}
-            </p>
+            {isValidDate && <p>{intl.formatMessage(messages.certificateNotAvailableEndDateBody, { endDate })}</p>}
             <p>
               {intl.formatMessage(messages.certificateNotAvailableBodyAccessCert)}
             </p>

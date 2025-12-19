@@ -193,7 +193,11 @@ const CertificateStatus = () => {
             day: 'numeric',
             ...timezoneFormatArgs,
           });
-          body = intl.formatMessage(messages.notAvailableEndDateBody, { endDate });
+          const certDate = (certificateAvailableDate || end);
+          const isValidDate = certDate && new Date(certDate).getTime() !== 0;
+          if (isValidDate) {
+            body = intl.formatMessage(messages.notAvailableEndDateBody, { endDate });
+          }
         } else {
           certCase = null;
           certEventName = 'no_certificate_status';
