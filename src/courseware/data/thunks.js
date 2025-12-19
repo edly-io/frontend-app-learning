@@ -279,6 +279,7 @@ export function getCourseOutlineStructure(courseId) {
     dispatch(fetchCourseOutlineRequest());
     try {
       const courseOutline = await getCourseOutline(courseId);
+      // debugger;
       dispatch(fetchCourseOutlineSuccess({ courseOutline }));
     } catch (error) {
       logError(error);

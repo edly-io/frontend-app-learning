@@ -161,6 +161,7 @@ export function normalizeOutlineBlocks(courseId, blocks) {
     units: {},
   };
   Object.values(blocks).forEach(block => {
+    // debugger;
     switch (block.type) {
       case 'chapter':
         models.sections[block.id] = {
@@ -188,6 +189,7 @@ export function normalizeOutlineBlocks(courseId, blocks) {
             completed: block.completion_stat?.completion,
             total: block.completion_stat?.completable_children,
           },
+          effort_time: block.effort_time || null,
         };
         break;
 
@@ -198,6 +200,7 @@ export function normalizeOutlineBlocks(courseId, blocks) {
           id: block.id,
           title: block.display_name,
           type: block.type,
+          effort_time: block.effort_time || null,
         };
         break;
 

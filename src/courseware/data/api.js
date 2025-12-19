@@ -39,7 +39,7 @@ export async function getCourseMetadata(courseId) {
 export async function getSequenceMetadata(sequenceId, params) {
   const { data } = await getAuthenticatedHttpClient()
     .get(`${getConfig().LMS_BASE_URL}/api/courseware/sequence/${sequenceId}`, { params });
-
+  // debugger;
   return normalizeSequenceMetadata(data);
 }
 
@@ -99,7 +99,7 @@ export async function getCourseTopics(courseId) {
 export async function getCourseOutline(courseId) {
   const { data } = await getAuthenticatedHttpClient()
     .get(`${getConfig().LMS_BASE_URL}/api/course_home/v1/navigation/${courseId}`);
-
+  // debugger;
   return data.blocks ? normalizeOutlineBlocks(courseId, data.blocks) : null;
 }
 
