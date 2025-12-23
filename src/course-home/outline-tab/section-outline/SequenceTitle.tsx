@@ -14,6 +14,7 @@ interface Props {
   title: string;
   sequence: object;
   id: string;
+  disabled?: boolean;
 }
 
 const SequenceTitle: React.FC<Props> = ({
@@ -22,10 +23,27 @@ const SequenceTitle: React.FC<Props> = ({
   title,
   sequence,
   id,
+  disabled = false,
 }) => {
   const intl = useIntl();
   const courseId = useContextId();
-  const coursewareUrl = <Link to={`/course/${courseId}/${id}`}>{title}</Link>;
+  const handleDisabledClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    return;
+  };
+
+  const coursewareUrl = (
+    <Link
+      to={`/course/${courseId}/${id}`}
+      onClick={disabled ? handleDisabledClick : undefined}
+      aria-disabled={disabled ? 'true' : undefined}
+      tabIndex={disabled ? -1 : undefined}
+      className={disabled ? 'text-muted disabled' : undefined}
+    >
+      {title}
+    </Link>
+  );
+
   const displayTitle = showLink ? coursewareUrl : title;
 
   return (

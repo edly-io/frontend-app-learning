@@ -16,12 +16,14 @@ interface Props {
     title: string;
     hideFromTOC: boolean;
   }
+  clickable?: boolean;
 }
 
 const SequenceLink: React.FC<Props> = ({
   id,
   first,
   sequence,
+  clickable = true,
 }) => {
   const {
     complete,
@@ -42,6 +44,7 @@ const SequenceLink: React.FC<Props> = ({
             title,
             sequence,
             id,
+            disabled: !clickable,
           }}
         />
         {hideFromTOC && (

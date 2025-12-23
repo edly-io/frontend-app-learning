@@ -23,6 +23,9 @@ const CourseHomeSectionOutlineSlot: React.FC<Props> = ({
           defaultOpen={sections[sectionId].resumeBlock}
           expand={expandAll}
           section={sections[sectionId]}
+          sectionId={sectionId}
+          sectionIds={sectionIds}
+          sectionsMap={sections}
         />
       ))}
     </ol>
