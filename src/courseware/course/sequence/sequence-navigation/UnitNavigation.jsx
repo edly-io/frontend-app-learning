@@ -1,8 +1,13 @@
 import classNames from 'classnames';
+import { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import PropTypes from 'prop-types';
 import { useIntl } from '@edx/frontend-platform/i18n';
 
+import { useModel } from '@src/generic/model-store';
 import { GetCourseExitNavigation } from '../../course-exit';
+import { checkBlockCompletion } from '../../../data/thunks';
+import { modelKeys } from '../Unit/constants';
 
 import { useSequenceNavigationMetadata } from './hooks';
 import messages from './messages';
@@ -18,6 +23,27 @@ const UnitNavigation = ({
   isAtTop,
   courseId,
 }) => {
+  const unit = useModel(modelKeys.units, unitId);
+  const unitCompleted = Boolean(unit?.complete);
+  const dispatch = useDispatch();
+  useEffect(() => {
+    if (!courseId || !sequenceId || !unitId) return undefined;
+    if (unitCompleted) return undefined;
+
+    const check = async () => {
+      try {
+        await dispatch(checkBlockCompletion(courseId, sequenceId, unitId));
+      } catch (err) {
+        // ignore errors;
+      }
+    };
+    check();
+    const id = setInterval(check, 5000);
+    return () => {
+      clearInterval(id);
+    };
+  }, [courseId, sequenceId, unitId, unitCompleted, dispatch]);
+  
   const intl = useIntl();
   const {
     isFirstUnit, isLastUnit, nextLink, previousLink,
@@ -41,7 +67,7 @@ const UnitNavigation = ({
   const renderNextButton = () => {
     const { exitActive, exitText } = GetCourseExitNavigation(courseId, intl);
     const buttonText = (isLastUnit && exitText) ? exitText : intl.formatMessage(messages.nextButton);
-    const disabled = isLastUnit && !exitActive;
+    const disabled = (isLastUnit && !exitActive) || !unitCompleted;
     const variant = 'outline-primary';
     const buttonStyle = `next-button ${isAtTop ? 'text-dark' : 'justify-content-center'}`;
 
