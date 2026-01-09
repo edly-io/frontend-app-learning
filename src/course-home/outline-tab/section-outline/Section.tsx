@@ -46,6 +46,7 @@ const Section: React.FC<Props> = ({
       sections,
     },
   } = useModel('outline', courseId);
+  const courseHomeMetaData = useModel('courseHomeMeta', courseId);
 
   const [open, setOpen] = useState(defaultOpen);
 
@@ -104,7 +105,7 @@ const Section: React.FC<Props> = ({
             }
 
             const thisComplete = !!sequences?.[sequenceId]?.complete;
-            const clickable = thisComplete || predecessorComplete;
+            const clickable = !courseHomeMetaData.isStaff ? (thisComplete || predecessorComplete) : true;
 
             return (
               <SequenceLink

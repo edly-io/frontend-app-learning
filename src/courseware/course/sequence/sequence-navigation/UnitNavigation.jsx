@@ -24,6 +24,7 @@ const UnitNavigation = ({
   courseId,
 }) => {
   const unit = useModel(modelKeys.units, unitId);
+  const courseHomeMetaData = useModel('courseHomeMeta', courseId);
   const unitCompleted = Boolean(unit?.complete);
   const dispatch = useDispatch();
   useEffect(() => {
@@ -67,7 +68,7 @@ const UnitNavigation = ({
   const renderNextButton = () => {
     const { exitActive, exitText } = GetCourseExitNavigation(courseId, intl);
     const buttonText = (isLastUnit && exitText) ? exitText : intl.formatMessage(messages.nextButton);
-    const disabled = (isLastUnit && !exitActive) || !unitCompleted;
+    const disabled = courseHomeMetaData.isStaff ? false : ((isLastUnit && !exitActive) || !unitCompleted);
     const variant = 'outline-primary';
     const buttonStyle = `next-button ${isAtTop ? 'text-dark' : 'justify-content-center'}`;
 

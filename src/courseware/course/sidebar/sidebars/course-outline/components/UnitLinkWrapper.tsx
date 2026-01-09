@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
+import { useModel } from '@src/generic/model-store';
 import { useCourseOutlineSidebar } from '../hooks';
 
 interface Props {
@@ -27,6 +28,7 @@ const UnitLinkWrapper: React.FC<Props> = ({
   children,
 }) => {
   const { handleUnitClick, sections, sequences, units } = useCourseOutlineSidebar();
+  const courseHomeMetaData = useModel('courseHomeMeta', courseId);
   const { pathname } = useLocation();
   const isPreview = pathname.startsWith('/preview');
   const baseUrl = `/course/${courseId}/${sequenceId}/${id}`;
@@ -54,7 +56,7 @@ const UnitLinkWrapper: React.FC<Props> = ({
     }
   }
   const prevCompleted = prevId ? Boolean(units?.[prevId]?.complete) : false;
-  const isDisabled = !(units?.[id]?.complete || prevCompleted) || false;
+  const isDisabled = courseHomeMetaData.isStaff ? false : (!(units?.[id]?.complete || prevCompleted) || false);
 
   return (
     <Link
