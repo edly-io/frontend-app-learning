@@ -11,16 +11,30 @@ import { appendBrowserTimezoneToUrl } from '../../utils';
  */
 function normalizeCourseHomeCourseMetadata(metadata, rootSlug) {
   const data = camelCaseObject(metadata);
+    
+  // Map existing tabs from backend
+  const mappedTabs = data.tabs.map(tab => ({
+    // The API uses "courseware" as a slug for both courseware and the outline tab.
+    // If needed, we switch it to "outline" here for
+    // use within the MFE to differentiate between course home and courseware.
+    slug: tab.tabId === 'courseware' ? rootSlug : tab.tabId,
+    title: tab.title,
+    url: tab.url,
+  }));
+  
+  // Inject Sessions tab if not already present
+  const hasSessionsTab = mappedTabs.some(tab => tab.slug === 'sessions');
+  if (!hasSessionsTab) {
+    mappedTabs.push({
+      slug: 'sessions',
+      title: 'Sessions',
+      url: `${getConfig().LEARNING_BASE_URL}/course/${data.courseId}/sessions`,
+    });
+  }
+  
   return {
     ...data,
-    tabs: data.tabs.map(tab => ({
-      // The API uses "courseware" as a slug for both courseware and the outline tab.
-      // If needed, we switch it to "outline" here for
-      // use within the MFE to differentiate between course home and courseware.
-      slug: tab.tabId === 'courseware' ? rootSlug : tab.tabId,
-      title: tab.title,
-      url: tab.url,
-    })),
+    tabs: mappedTabs,
     isMasquerading: data.originalUserIsStaff && !data.isStaff,
   };
 }

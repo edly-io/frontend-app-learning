@@ -97,6 +97,10 @@ export function fetchOutlineTab(courseId) {
   return fetchTab(courseId, 'outline', getOutlineTabData);
 }
 
+export function fetchAttendanceTab(courseId) {
+  return fetchTab(courseId, 'attendance');
+}
+
 export function fetchLiveTab(courseId) {
   return fetchTab(courseId, 'live', getLiveTabIframe);
 }

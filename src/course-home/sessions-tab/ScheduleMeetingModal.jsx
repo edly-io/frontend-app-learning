@@ -1,0 +1,603 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { StandardModal, Button, Form, Spinner, Alert, OverlayTrigger, Tooltip } from '@openedx/paragon';
+import { createSession, updateSession } from './api';
+import { toISOString, toDateTimeLocal, extractApiError } from './utils';
+
+// ─── Recurrence constants ─────────────────────────────────────────────────────
+
+const RECURRENCE_TYPES = [
+  { value: 'daily', label: 'day' },
+  { value: 'weekly', label: 'week' },
+  { value: 'monthly', label: 'month' },
+];
+
+// Mon–Fri weekday buttons — Zoom weekday numbers (Mon=2 … Fri=6)
+const ALL_WEEK_DAYS = [
+  { value: 2, letter: 'M', fullName: 'Monday' },
+  { value: 3, letter: 'T', fullName: 'Tuesday' },
+  { value: 4, letter: 'W', fullName: 'Wednesday' },
+  { value: 5, letter: 'T', fullName: 'Thursday' },
+  { value: 6, letter: 'F', fullName: 'Friday' },
+];
+
+// Alias (same set, used in summary helpers)
+const WEEK_DAYS = ALL_WEEK_DAYS.slice(1, 6);
+
+const MONTHLY_WEEKS = [
+  { value: 1, label: 'First' },
+  { value: 2, label: 'Second' },
+  { value: 3, label: 'Third' },
+  { value: 4, label: 'Fourth' },
+  { value: -1, label: 'Last' },
+];
+
+// ─── Recurrence limits ────────────────────────────────────────────────────────
+
+const MAX_END_COUNT = 30;   // We cap at 30; Zoom's absolute hard limit is 60
+const MAX_END_MONTHS = 2;   // End date can be at most 2 months from session start
+
+/** Returns the ISO date string (YYYY-MM-DD) that is MAX_END_MONTHS months after startDateString. */
+const getMaxEndDate = (startDateString) => {
+  if (!startDateString) return '';
+  const d = new Date(startDateString);
+  d.setMonth(d.getMonth() + MAX_END_MONTHS);
+  return d.toISOString().slice(0, 10);
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Returns the Zoom weekday number for a datetime-local string, clamped to Mon–Fri (2–6). */
+const getZoomWeekdayFromDate = (dateString) => {
+  if (!dateString) return 2;
+  const day = new Date(dateString).getDay() + 1; // JS 0-based → Zoom 1-based (1=Sun … 7=Sat)
+  return Math.min(6, Math.max(2, day)); // Clamp to Mon–Fri (2–6)
+};
+
+/** Returns the day-of-month (1–31) from a datetime-local string. */
+const getMonthDayFromDate = (dateString) => {
+  if (!dateString) return 1;
+  return new Date(dateString).getDate();
+};
+
+/** Returns which week-of-month the date falls on (1–4). */
+const getMonthWeekFromDate = (dateString) => {
+  if (!dateString) return 1;
+  return Math.min(4, Math.ceil(new Date(dateString).getDate() / 7));
+};
+
+const getLocalDateString = (isoString) => {
+  if (!isoString) return '';
+  return new Date(isoString).toISOString().slice(0, 10);
+};
+
+/** Builds a human-readable summary shown below the recurrence panel. */
+const buildSummary = ({ recurrenceType, weeklyDays, monthlyMode, monthlyDay, monthlyWeek, monthlyWeekDay, endType, endCount, endDate }) => {
+  const dayName = (v) => ALL_WEEK_DAYS.find((d) => d.value === v)?.fullName ?? '';
+  const weekLabel = (v) => MONTHLY_WEEKS.find((w) => w.value === v)?.label ?? '';
+
+  let pattern = '';
+  if (recurrenceType === 'daily') {
+    pattern = 'Every weekday (Mon–Fri)';
+  } else if (recurrenceType === 'weekly') {
+    if (!weeklyDays.length) return '';
+    const names = weeklyDays.map(dayName).filter(Boolean);
+    pattern = `Every ${names.join(' and ')}`;
+  } else if (recurrenceType === 'monthly') {
+    if (monthlyMode === 'day') {
+      pattern = `Day ${monthlyDay} of every month`;
+    } else {
+      pattern = `${weekLabel(monthlyWeek)} ${dayName(monthlyWeekDay)} of every month`;
+    }
+  }
+
+  if (!pattern) return '';
+  if (endType === 'count') return `${pattern} • ${endCount} session${endCount !== 1 ? 's' : ''}`;
+  if (endType === 'date' && endDate) {
+    const formatted = new Date(`${endDate}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return `${pattern} • until ${formatted}`;
+  }
+  return pattern;
+};
+
+const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session }) => {
+  const timezoneName = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const errorRef = useRef(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    scheduled_start_time: '',
+    scheduled_end_time: '',
+  });
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceType, setRecurrenceType] = useState('weekly');
+  const [weeklyDays, setWeeklyDays] = useState([2]);
+  const [monthlyMode, setMonthlyMode] = useState('day');
+  const [monthlyDay, setMonthlyDay] = useState(1);
+  const [monthlyWeek, setMonthlyWeek] = useState(1);
+  const [monthlyWeekDay, setMonthlyWeekDay] = useState(2);
+  const [endType, setEndType] = useState('count');
+  const [endCount, setEndCount] = useState(10);
+  const [endDate, setEndDate] = useState('');
+
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (session) {
+      setFormData({
+        title: session.title || '',
+        description: session.description || '',
+        scheduled_start_time: toDateTimeLocal(session.scheduled_start_time) || '',
+        scheduled_end_time: toDateTimeLocal(session.scheduled_end_time) || '',
+      });
+      const recurrence = session.recurrence || {};
+      const hasRecurrence = session.is_recurring || Object.keys(recurrence).length > 0;
+      setIsRecurring(hasRecurrence);
+      if (hasRecurrence) {
+        const type = recurrence.type || 2;
+        const typeLabel = type === 1 ? 'daily' : type === 3 ? 'monthly' : 'weekly';
+        setRecurrenceType(typeLabel);
+        if (type === 2) {
+          const days = (recurrence.weekly_days || '')
+            .split(',')
+            .map((d) => parseInt(d, 10))
+            .filter((d) => Number.isInteger(d));
+          setWeeklyDays(days.length ? days : [2]);
+        }
+        if (type === 3) {
+          if (recurrence.monthly_day) {
+            setMonthlyMode('day');
+            setMonthlyDay(recurrence.monthly_day);
+          } else {
+            setMonthlyMode('week');
+            setMonthlyWeek(recurrence.monthly_week || 1);
+            setMonthlyWeekDay(recurrence.monthly_week_day || 2);
+          }
+        }
+        if (recurrence.end_times) {
+          setEndType('count');
+          setEndCount(recurrence.end_times);
+          setEndDate('');
+        } else if (recurrence.end_date_time) {
+          setEndType('date');
+          setEndDate(getLocalDateString(recurrence.end_date_time));
+        } else {
+          // Fallback: default to 10 occurrences
+          setEndType('count');
+          setEndCount(10);
+        }
+      }
+    } else {
+      setFormData({
+        title: '',
+        description: '',
+        scheduled_start_time: '',
+        scheduled_end_time: '',
+      });
+      setIsRecurring(false);
+      setRecurrenceType('weekly');
+      setWeeklyDays([2]);
+      setMonthlyMode('day');
+      setMonthlyDay(1);
+      setMonthlyWeek(1);
+      setMonthlyWeekDay(2);
+      setEndType('count');
+      setEndCount(10);
+      setEndDate('');
+    }
+  }, [session, isOpen]);
+
+  useEffect(() => {
+    if (!session && formData.scheduled_start_time) {
+      const weekday = getZoomWeekdayFromDate(formData.scheduled_start_time);
+      const day = getMonthDayFromDate(formData.scheduled_start_time);
+      setWeeklyDays([weekday]);
+      setMonthlyDay(day);
+      setMonthlyWeek(getMonthWeekFromDate(formData.scheduled_start_time));
+      setMonthlyWeekDay(weekday);
+      // Day 29-31 doesn't exist in all months — force the safer weekday pattern
+      if (day >= 29) setMonthlyMode('week');
+    }
+  }, [formData.scheduled_start_time, session]);
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData({
+      ...formData,
+      [name]: type === 'checkbox' ? checked : value,
+    });
+  };
+
+  const validateForm = () => {
+    if (!formData.title.trim()) {
+      setError('Title is required');
+      setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+      return false;
+    }
+    if (!formData.scheduled_start_time) {
+      setError('Start time is required');
+      setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+      return false;
+    }
+    if (!formData.scheduled_end_time) {
+      setError('End time is required');
+      setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+      return false;
+    }
+    if (new Date(formData.scheduled_end_time) <= new Date(formData.scheduled_start_time)) {
+      setError('End time must be after start time');
+      setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+      return false;
+    }
+    if (isRecurring) {
+      if (recurrenceType === 'weekly' && (!weeklyDays || weeklyDays.length === 0)) {
+        setError('Select at least one weekday');
+        setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+        return false;
+      }
+      if (recurrenceType === 'monthly' && monthlyMode === 'day' && (!monthlyDay || monthlyDay < 1 || monthlyDay > 31)) {
+        setError('Monthly day must be between 1 and 31');
+        setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+        return false;
+      }
+      if (endType === 'count' && (!endCount || endCount < 1)) {
+        setError('End count must be at least 1');
+        setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+        return false;
+      }
+      if (endType === 'count' && endCount > MAX_END_COUNT) {
+        setError(`Occurrences cannot exceed ${MAX_END_COUNT}.`);
+        setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+        return false;
+      }
+      if (endType === 'date' && !endDate) {
+        setError('End date is required');
+        setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+        return false;
+      }
+      if (endType === 'date' && endDate) {
+        const startDateOnly = formData.scheduled_start_time
+          ? new Date(formData.scheduled_start_time).toISOString().slice(0, 10)
+          : '';
+        if (startDateOnly && endDate < startDateOnly) {
+          setError('End date must be after the start date');
+          setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+          return false;
+        }
+        const maxDate = getMaxEndDate(formData.scheduled_start_time);
+        if (maxDate && endDate > maxDate) {
+          setError(`End date cannot be more than ${MAX_END_MONTHS} months from the start date.`);
+          setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+          return false;
+        }
+      }
+    }
+    return true;
+  };
+
+  const buildRecurrence = () => {
+    if (!isRecurring) return null;
+    const recurrence = { repeat_interval: 1 };
+    if (recurrenceType === 'daily') {
+      // type 1 = Zoom daily recurrence (every weekday when repeat_interval=1 and no weekly_days)
+      recurrence.type = 1;
+    } else if (recurrenceType === 'weekly') {
+      recurrence.type = 2;
+      recurrence.weekly_days = [...weeklyDays].filter((d) => d >= 2 && d <= 6).sort((a, b) => a - b).join(',');
+    } else if (recurrenceType === 'monthly') {
+      recurrence.type = 3;
+      if (monthlyMode === 'day') {
+        recurrence.monthly_day = monthlyDay;
+      } else {
+        recurrence.monthly_week = monthlyWeek;
+        recurrence.monthly_week_day = monthlyWeekDay;
+      }
+    }
+    if (endType === 'count') {
+      recurrence.end_times = endCount;
+    } else if (endType === 'date') {
+      recurrence.end_date_time = new Date(`${endDate}T23:59:59`).toISOString();
+    }
+    return recurrence;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    setLoading(true);
+
+    try {
+      const recurrence = buildRecurrence();
+      const sessionData = {
+        title: formData.title,
+        description: formData.description,
+        scheduled_start_time: toISOString(formData.scheduled_start_time),
+        scheduled_end_time: toISOString(formData.scheduled_end_time),
+        timezone: timezoneName,
+        is_recurring: isRecurring,
+        // Platform is always 'zoom' and is_attendance_mandatory is always true (backend sets these)
+      };
+      if (recurrence) {
+        sessionData.recurrence = recurrence;
+      }
+
+      let result;
+      if (session) {
+        // Update existing session
+        result = await updateSession(courseId, session.id, sessionData);
+      } else {
+        // Create new session
+        result = await createSession(courseId, sessionData);
+      }
+      
+      onSuccess(result);
+      
+      // Reset form
+      setFormData({
+        title: '',
+        description: '',
+        scheduled_start_time: '',
+        scheduled_end_time: '',
+      });
+    } catch (err) {
+      setError(extractApiError(err, 'Failed to save session. Please try again.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    setError('');
+    onClose();
+  };
+
+  return (
+    <StandardModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={session ? "Edit Session" : "Schedule New Meeting"}
+      footerNode={(
+        <>
+          <Button variant="tertiary" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleSubmit} disabled={loading} className="ml-2">
+            {loading ? (
+              <>
+                <Spinner animation="border" size="sm" className="mr-2" />
+                {session ? 'Updating...' : 'Creating...'}
+              </>
+            ) : (
+              session ? 'Update Session' : 'Create Session'
+            )}
+          </Button>
+        </>
+      )}
+    >
+      <div style={{ maxHeight: 'calc(80vh - 10rem)', overflowY: 'auto', overflowX: 'hidden', padding: '0 4px' }}>
+      {error && (
+        <Alert variant="danger" dismissible onClose={() => setError('')} ref={errorRef}>
+          {error}
+        </Alert>
+      )}
+
+      <Form onSubmit={handleSubmit}>
+        <Form.Group className="mb-3">
+          <Form.Label>Title *</Form.Label>
+          <Form.Control
+            type="text"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            required
+            placeholder="e.g., Week 5 Live Session"
+          />
+        </Form.Group>
+
+        <Form.Group className="mb-3">
+          <Form.Label>Description</Form.Label>
+          <Form.Control
+            as="textarea"
+            rows={3}
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            placeholder="Add session details..."
+          />
+        </Form.Group>
+
+        <div className="row">
+          <div className="col-md-6">
+            <Form.Group className="mb-3">
+              <Form.Label>Start Time *</Form.Label>
+              <Form.Control
+                type="datetime-local"
+                name="scheduled_start_time"
+                value={formData.scheduled_start_time}
+                onChange={handleChange}
+                required
+              />
+            </Form.Group>
+          </div>
+
+          <div className="col-md-6">
+            <Form.Group className="mb-3">
+              <Form.Label>End Time *</Form.Label>
+              <Form.Control
+                type="datetime-local"
+                name="scheduled_end_time"
+                value={formData.scheduled_end_time}
+                onChange={handleChange}
+                required
+              />
+            </Form.Group>
+          </div>
+        </div>
+
+        <Form.Group className="mb-0">
+          <Form.Checkbox
+            id="recurring-meeting-toggle"
+            name="is_recurring"
+            checked={isRecurring}
+            onChange={(e) => setIsRecurring(e.target.checked)}
+            disabled={session?.is_recurring}
+          >
+            Recurring meeting
+          </Form.Checkbox>
+        </Form.Group>
+
+        {isRecurring && (
+          <div
+            className="mt-3 p-3 rounded"
+            style={{ backgroundColor: '#f8f9fa', border: '1px solid #dee2e6' }}
+          >
+            {/* ── Repeat every ── */}
+            <div className="d-flex align-items-center mb-3" style={{ gap: '0.6rem' }}>
+              <span style={{ color: '#3d3d3d', whiteSpace: 'nowrap' }}>Repeat every</span>
+              <Form.Control
+                as="select"
+                value={recurrenceType}
+                onChange={(e) => setRecurrenceType(e.target.value)}
+                size="sm"
+                style={{ width: 'auto' }}
+              >
+                {RECURRENCE_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </Form.Control>
+            </div>
+            {/* ── Weekly: circular day buttons ── */}
+            {recurrenceType === 'weekly' && (
+              <Form.Group className="mb-3">
+                <Form.Label>Repeat on</Form.Label>
+                <div className="d-flex" style={{ gap: '0.35rem' }}>
+                  {ALL_WEEK_DAYS.map((day) => {
+                    const selected = weeklyDays.includes(day.value);
+                    return (
+                      <OverlayTrigger
+                        key={day.value}
+                        placement="top"
+                        overlay={<Tooltip id={`day-tip-${day.value}`}>{day.fullName}</Tooltip>}
+                      >
+                        <button
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() => {
+                            if (selected) setWeeklyDays(weeklyDays.filter((d) => d !== day.value));
+                            else setWeeklyDays([...weeklyDays, day.value]);
+                          }}
+                          style={{
+                            width: '34px',
+                            height: '34px',
+                            borderRadius: '50%',
+                            border: `1px solid ${selected ? '#0d6efd' : '#ced4da'}`,
+                            background: selected ? '#0d6efd' : 'transparent',
+                            color: selected ? '#fff' : '#3d3d3d',
+                            fontWeight: selected ? 600 : 400,
+                            fontSize: '0.78rem',
+                            cursor: 'pointer',
+                            padding: 0,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {day.letter}
+                        </button>
+                      </OverlayTrigger>
+                    );
+                  })}
+                </div>
+                {weeklyDays.length === 0 && (
+                  <small className="text-danger d-block mt-1">Select at least one day.</small>
+                )}
+              </Form.Group>
+            )}
+
+            {/* ── Monthly: smart single dropdown ── */}
+            {recurrenceType === 'monthly' && (
+              <Form.Group className="mb-3">
+                <Form.Control
+                  as="select"
+                  value={monthlyMode}
+                  onChange={(e) => setMonthlyMode(e.target.value)}
+                  size="sm"
+                  style={{ width: 'auto' }}
+                >
+                  {monthlyDay <= 28 && (
+                    <option value="day">Monthly on day {monthlyDay}</option>
+                  )}
+                  <option value="week">{`Monthly on the ${MONTHLY_WEEKS.find((w) => w.value === monthlyWeek)?.label?.toLowerCase() ?? 'first'} ${ALL_WEEK_DAYS.find((d) => d.value === monthlyWeekDay)?.fullName ?? 'Monday'}`}</option>
+                </Form.Control>
+                {monthlyDay >= 29 && (
+                  <small className="text-muted d-block mt-1">
+                    Day {monthlyDay} doesn’t exist in all months, so only the weekday option is available.
+                  </small>
+                )}
+              </Form.Group>
+            )}
+
+            {/* ── Ends — vertically stacked (GCal style) ── */}
+            <Form.Group className="mb-3">
+              <Form.Label>Ends</Form.Label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div className="d-flex align-items-center" style={{ gap: '0.75rem' }}>
+                  <input type="radio" id="end-date" name="endType" checked={endType === 'date'} onChange={() => setEndType('date')} />
+                  <label htmlFor="end-date" className="mb-0" style={{ minWidth: '42px' }}>On</label>
+                  <div className="d-flex align-items-center" style={{ gap: '0.4rem' }}>
+                    <Form.Control
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => { setEndType('date'); setEndDate(e.target.value); }}
+                      onClick={() => setEndType('date')}
+                      size="sm"
+                      style={{ width: '150px', flexShrink: 0, flexGrow: 0 }}
+                      max={getMaxEndDate(formData.scheduled_start_time)}
+                    />
+                    <small style={{ color: '#6c757d', whiteSpace: 'nowrap' }}>(max {MAX_END_MONTHS} months)</small>
+                  </div>
+                </div>
+                <div className="d-flex align-items-center" style={{ gap: '0.75rem' }}>
+                  <input type="radio" id="end-count" name="endType" checked={endType === 'count'} onChange={() => setEndType('count')} />
+                  <label htmlFor="end-count" className="mb-0" style={{ minWidth: '42px' }}>After</label>
+                  <div className="d-flex align-items-center" style={{ gap: '0.4rem' }}>
+                    <Form.Control
+                      type="text"
+                      inputMode="numeric"
+                      value={endCount}
+                      onChange={(e) => { setEndType('count'); const v = parseInt(e.target.value.replace(/\D/g, ''), 10); if (!isNaN(v)) setEndCount(Math.min(MAX_END_COUNT, Math.max(1, v))); }}
+                      onClick={() => setEndType('count')}
+                      size="sm"
+                      style={{ width: '56px', textAlign: 'center', flexShrink: 0 }}
+                    />
+                    <span style={{ color: '#3d3d3d', whiteSpace: 'nowrap' }}>occurrences</span>
+                    <small style={{ color: '#6c757d', whiteSpace: 'nowrap' }}>(max {MAX_END_COUNT})</small>
+                  </div>
+                </div>
+              </div>
+            </Form.Group>
+
+            {/* ── Live summary ── */}
+            {buildSummary({ recurrenceType, weeklyDays, monthlyMode, monthlyDay, monthlyWeek, monthlyWeekDay, endType, endCount, endDate }) && (
+              <div
+                className="d-flex align-items-center rounded p-2"
+                style={{ backgroundColor: '#e8f4fd', border: '1px solid #b8daff', gap: '0.5rem', marginTop: '0.25rem' }}
+              >
+                <span style={{ fontSize: '1rem' }}>📅</span>
+                <small style={{ color: '#0c5460' }}>
+                  {buildSummary({ recurrenceType, weeklyDays, monthlyMode, monthlyDay, monthlyWeek, monthlyWeekDay, endType, endCount, endDate })}
+                </small>
+              </div>
+            )}
+          </div>
+        )}
+      </Form>
+      </div>
+    </StandardModal>
+  );
+};
+
+export default ScheduleMeetingModal;
