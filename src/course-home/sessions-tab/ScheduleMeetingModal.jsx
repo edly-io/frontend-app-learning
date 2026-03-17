@@ -70,6 +70,14 @@ const getLocalDateString = (isoString) => {
   return new Date(isoString).toISOString().slice(0, 10);
 };
 
+const splitDateTimeLocal = (dateTimeLocalString) => {
+  if (!dateTimeLocalString) return { date: '', time: '' };
+  const [date, time] = dateTimeLocalString.split('T');
+  return { date: date || '', time: (time || '').slice(0, 5) };
+};
+
+const combineDateTimeLocal = (date, time) => (date && time ? `${date}T${time}` : '');
+
 /** Builds a human-readable summary shown below the recurrence panel. */
 const buildSummary = ({ recurrenceType, weeklyDays, monthlyMode, monthlyDay, monthlyWeek, monthlyWeekDay, endType, endCount, endDate }) => {
   const dayName = (v) => ALL_WEEK_DAYS.find((d) => d.value === v)?.fullName ?? '';
@@ -120,16 +128,28 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
   const [endType, setEndType] = useState('count');
   const [endCount, setEndCount] = useState(10);
   const [endDate, setEndDate] = useState('');
+  const [startDateInput, setStartDateInput] = useState('');
+  const [startTimeInput, setStartTimeInput] = useState('');
+  const [endDateInput, setEndDateInput] = useState('');
+  const [endTimeInput, setEndTimeInput] = useState('');
 
   // Pre-fill form when editing
   useEffect(() => {
     if (session) {
+      const startDateTimeLocal = toDateTimeLocal(session.scheduled_start_time) || '';
+      const endDateTimeLocal = toDateTimeLocal(session.scheduled_end_time) || '';
+      const { date: startDate, time: startTime } = splitDateTimeLocal(startDateTimeLocal);
+      const { date: endDateValue, time: endTime } = splitDateTimeLocal(endDateTimeLocal);
       setFormData({
         title: session.title || '',
         description: session.description || '',
-        scheduled_start_time: toDateTimeLocal(session.scheduled_start_time) || '',
-        scheduled_end_time: toDateTimeLocal(session.scheduled_end_time) || '',
+        scheduled_start_time: startDateTimeLocal,
+        scheduled_end_time: endDateTimeLocal,
       });
+      setStartDateInput(startDate);
+      setStartTimeInput(startTime);
+      setEndDateInput(endDateValue);
+      setEndTimeInput(endTime);
       const recurrence = session.recurrence || {};
       const hasRecurrence = session.is_recurring || Object.keys(recurrence).length > 0;
       setIsRecurring(hasRecurrence);
@@ -174,6 +194,10 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
         scheduled_start_time: '',
         scheduled_end_time: '',
       });
+      setStartDateInput('');
+      setStartTimeInput('');
+      setEndDateInput('');
+      setEndTimeInput('');
       setIsRecurring(false);
       setRecurrenceType('weekly');
       setWeeklyDays([2]);
@@ -188,17 +212,18 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
   }, [session, isOpen]);
 
   useEffect(() => {
-    if (!session && formData.scheduled_start_time) {
-      const weekday = getZoomWeekdayFromDate(formData.scheduled_start_time);
-      const day = getMonthDayFromDate(formData.scheduled_start_time);
+    const baseDateTime = formData.scheduled_start_time || (startDateInput ? `${startDateInput}T00:00` : '');
+    if (!session && baseDateTime) {
+      const weekday = getZoomWeekdayFromDate(baseDateTime);
+      const day = getMonthDayFromDate(baseDateTime);
       setWeeklyDays([weekday]);
       setMonthlyDay(day);
-      setMonthlyWeek(getMonthWeekFromDate(formData.scheduled_start_time));
+      setMonthlyWeek(getMonthWeekFromDate(baseDateTime));
       setMonthlyWeekDay(weekday);
       // Day 29-31 doesn't exist in all months — force the safer weekday pattern
       if (day >= 29) setMonthlyMode('week');
     }
-  }, [formData.scheduled_start_time, session]);
+  }, [formData.scheduled_start_time, startDateInput, session]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -206,6 +231,42 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
       ...formData,
       [name]: type === 'checkbox' ? checked : value,
     });
+  };
+
+  const handleStartDateChange = (e) => {
+    const date = e.target.value;
+    setStartDateInput(date);
+    setFormData((prev) => ({
+      ...prev,
+      scheduled_start_time: combineDateTimeLocal(date, startTimeInput),
+    }));
+  };
+
+  const handleStartTimeChange = (e) => {
+    const time = e.target.value;
+    setStartTimeInput(time);
+    setFormData((prev) => ({
+      ...prev,
+      scheduled_start_time: combineDateTimeLocal(startDateInput, time),
+    }));
+  };
+
+  const handleEndDateChange = (e) => {
+    const date = e.target.value;
+    setEndDateInput(date);
+    setFormData((prev) => ({
+      ...prev,
+      scheduled_end_time: combineDateTimeLocal(date, endTimeInput),
+    }));
+  };
+
+  const handleEndTimeChange = (e) => {
+    const time = e.target.value;
+    setEndTimeInput(time);
+    setFormData((prev) => ({
+      ...prev,
+      scheduled_end_time: combineDateTimeLocal(endDateInput, time),
+    }));
   };
 
   const validateForm = () => {
@@ -256,15 +317,16 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
         return false;
       }
       if (endType === 'date' && endDate) {
-        const startDateOnly = formData.scheduled_start_time
-          ? new Date(formData.scheduled_start_time).toISOString().slice(0, 10)
+        const startDateForRange = formData.scheduled_start_time || (startDateInput ? `${startDateInput}T00:00` : '');
+        const startDateOnly = startDateForRange
+          ? new Date(startDateForRange).toISOString().slice(0, 10)
           : '';
         if (startDateOnly && endDate < startDateOnly) {
           setError('End date must be after the start date');
           setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
           return false;
         }
-        const maxDate = getMaxEndDate(formData.scheduled_start_time);
+        const maxDate = getMaxEndDate(startDateForRange);
         if (maxDate && endDate > maxDate) {
           setError(`End date cannot be more than ${MAX_END_MONTHS} months from the start date.`);
           setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
@@ -344,6 +406,10 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
         scheduled_start_time: '',
         scheduled_end_time: '',
       });
+      setStartDateInput('');
+      setStartTimeInput('');
+      setEndDateInput('');
+      setEndTimeInput('');
     } catch (err) {
       setError(extractApiError(err, 'Failed to save session. Please try again.'));
     } finally {
@@ -411,33 +477,55 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
           />
         </Form.Group>
 
-        <div className="row">
-          <div className="col-md-6">
-            <Form.Group className="mb-3">
-              <Form.Label>Start Time *</Form.Label>
+        <Form.Group className="mb-3">
+          <Form.Label>Start date and time *</Form.Label>
+          <div className="row g-2">
+            <div className="col-7">
               <Form.Control
-                type="datetime-local"
-                name="scheduled_start_time"
-                value={formData.scheduled_start_time}
-                onChange={handleChange}
+                type="date"
+                value={startDateInput}
+                onChange={handleStartDateChange}
+                aria-label="Start date"
                 required
               />
-            </Form.Group>
+            </div>
+            <div className="col-5">
+              <Form.Control
+                type="time"
+                value={startTimeInput}
+                onChange={handleStartTimeChange}
+                aria-label="Start time"
+                step="60"
+                required
+              />
+            </div>
           </div>
+        </Form.Group>
 
-          <div className="col-md-6">
-            <Form.Group className="mb-3">
-              <Form.Label>End Time *</Form.Label>
+        <Form.Group className="mb-3">
+          <Form.Label>End date and time *</Form.Label>
+          <div className="row g-2">
+            <div className="col-7">
               <Form.Control
-                type="datetime-local"
-                name="scheduled_end_time"
-                value={formData.scheduled_end_time}
-                onChange={handleChange}
+                type="date"
+                value={endDateInput}
+                onChange={handleEndDateChange}
+                aria-label="End date"
                 required
               />
-            </Form.Group>
+            </div>
+            <div className="col-5">
+              <Form.Control
+                type="time"
+                value={endTimeInput}
+                onChange={handleEndTimeChange}
+                aria-label="End time"
+                step="60"
+                required
+              />
+            </div>
           </div>
-        </div>
+        </Form.Group>
 
         <Form.Group className="mb-0">
           <Form.Checkbox
