@@ -14,20 +14,19 @@ import { SESSION_STATUS_LABELS } from '../constants';
 
 const VIEWS = { MONTH: 'month', WEEK: 'week', DAY: 'day' };
 
-// Mon(1)…Sun(0) → reorder so Monday=0, Sunday=6
-const WEEK_DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+// Sun(0) first, matching JS getDay() order
+const WEEK_DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
 /** Returns a local date string YYYY-MM-DD for any Date object. */
 const toDateKey = (date) => date.toLocaleDateString('en-CA');
 
-/** Returns the Monday that starts the ISO week containing `date`. */
+/** Returns the Sunday that starts the week containing `date`. */
 const getWeekStart = (date) => {
   const d = new Date(date);
   const day = d.getDay(); // 0=Sun … 6=Sat
-  const diff = day === 0 ? -6 : 1 - day; // shift to Monday
-  d.setDate(d.getDate() + diff);
+  d.setDate(d.getDate() - day); // shift back to Sunday
   d.setHours(0, 0, 0, 0);
   return d;
 };
@@ -50,11 +49,12 @@ const getMonthGridDays = (date) => {
   const lastDay = new Date(year, month + 1, 0);
   const gridStart = getWeekStart(firstDay);
 
-  // Extend grid to cover the full week containing the last day
+  // Extend grid to the Saturday that ends the week containing the last day
+  // (weeks run Sun–Sat, so Saturday = getDay() 6 is the last column)
   const endDay = new Date(lastDay);
   const endDayOfWeek = endDay.getDay();
-  const daysToSunday = endDayOfWeek === 0 ? 0 : 7 - endDayOfWeek;
-  endDay.setDate(endDay.getDate() + daysToSunday);
+  const daysToSaturday = endDayOfWeek === 6 ? 0 : 6 - endDayOfWeek;
+  endDay.setDate(endDay.getDate() + daysToSaturday);
 
   const days = [];
   const cursor = new Date(gridStart);
@@ -70,7 +70,9 @@ const formatRangeLabel = (view, date) => {
   const monthYear = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   if (view === VIEWS.MONTH) return monthYear;
   if (view === VIEWS.DAY) {
-    return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long', month: 'short', day: 'numeric', year: 'numeric',
+    });
   }
   // Week
   const days = getWeekDays(date);
@@ -79,9 +81,7 @@ const formatRangeLabel = (view, date) => {
   return `${start} – ${end}`;
 };
 
-// ─── DayCell ──────────────────────────────────────────────────────────────────
-
-const MAX_CHIPS = 2;
+// ─── Shared style helpers ─────────────────────────────────────────────────────
 
 const statusColors = {
   scheduled: '#0d6efd',
@@ -94,10 +94,14 @@ const statusColors = {
 const isWeekendDay = (date) => date.getDay() === 0 || date.getDay() === 6;
 
 const getCellBackground = (isToday, isWeekend) => {
-  if (isToday) return '#eef2ff'; // soft indigo tint — stands out without clashing
+  if (isToday) return '#eef2ff'; // soft indigo tint
   if (isWeekend) return '#f8f8f8'; // subtle grey for non-working days
   return '#fff';
 };
+
+// ─── DayCell (Month view only) ────────────────────────────────────────────────
+
+const MAX_CHIPS = 2;
 
 const DayCell = ({
   date, sessions = [], onClick, isOutsideMonth = false, cellMinHeight = 110,
@@ -187,27 +191,37 @@ const MonthGrid = ({ currentDate, sessionMap, onDayClick }) => {
   const currentMonth = currentDate.getMonth();
 
   return (
-    <div>
-      {/* Day-name header row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 4 }}>
-        {WEEK_DAY_NAMES.map((name) => (
-          <div
-            key={name}
-            style={{
-              textAlign: 'center',
-              fontSize: 12,
-              fontWeight: 600,
-              color: '#6c757d',
-              padding: '4px 0',
-            }}
-          >
-            {name}
-          </div>
-        ))}
+    <div style={{ border: '1px solid #dee2e6', borderRadius: 4, overflow: 'hidden' }}>
+      {/* Day-name header row — matches week/day view style */}
+      <div style={{
+        display: 'flex',
+        borderBottom: '2px solid #dee2e6',
+        background: '#fff',
+      }}
+      >
+        {WEEK_DAY_NAMES.map((name, idx) => {
+          const isWeekend = idx === 0 || idx === 6; // Sun=0, Sat=6
+          return (
+            <div
+              key={name}
+              style={{
+                flex: 1,
+                textAlign: 'center',
+                padding: '8px 4px',
+                fontSize: 12,
+                fontWeight: 600,
+                color: isWeekend ? '#adb5bd' : '#6c757d',
+                borderLeft: idx === 0 ? 'none' : '1px solid #dee2e6',
+              }}
+            >
+              {name}
+            </div>
+          );
+        })}
       </div>
 
       {/* Day cells grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, padding: 4 }}>
         {days.map((day) => (
           <DayCell
             key={toDateKey(day)}
@@ -223,46 +237,253 @@ const MonthGrid = ({ currentDate, sessionMap, onDayClick }) => {
   );
 };
 
-// ─── WeekGrid ─────────────────────────────────────────────────────────────────
+// ─── Time Grid (Week and Day views) ──────────────────────────────────────────
 
-const WeekGrid = ({ currentDate, sessionMap, onDayClick }) => {
-  const days = getWeekDays(currentDate);
+const START_HOUR = 6;       // 6 AM — earliest visible hour
+const END_HOUR = 21;        // 9 PM — latest visible hour
+const HOUR_HEIGHT = 60;     // px per hour
+const TIME_COL_WIDTH = 52;  // px — left time axis column
+const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
+
+const formatHour = (hour) => {
+  if (hour === 0) return '12 AM';
+  if (hour < 12) return `${hour} AM`;
+  if (hour === 12) return '12 PM';
+  return `${hour - 12} PM`;
+};
+
+/** Top offset and height (px) for a session block inside the time grid. */
+const getSessionPosition = (session) => {
+  const start = new Date(session.scheduled_start_time);
+  const end = new Date(session.scheduled_end_time || session.scheduled_start_time);
+  const startDec = start.getHours() + start.getMinutes() / 60;
+  const endDec = end.getHours() + end.getMinutes() / 60;
+  const top = (Math.max(startDec, START_HOUR) - START_HOUR) * HOUR_HEIGHT;
+  const height = Math.max(
+    (Math.min(endDec, END_HOUR) - Math.max(startDec, START_HOUR)) * HOUR_HEIGHT,
+    22, // minimum block height so very short sessions remain clickable
+  );
+  return { top, height };
+};
+
+/**
+ * Given the sessions for one day, returns a map of
+ *   sessionId → { lane, totalLanes }
+ * so overlapping sessions are rendered side-by-side.
+ * Non-overlapping sessions always get full column width because totalLanes
+ * reflects only the concurrent overlap depth at each session's own time slot.
+ */
+const layoutSessions = (sessions) => {
+  if (sessions.length === 0) return {};
+
+  const sorted = [...sessions].sort(
+    (a, b) => new Date(a.scheduled_start_time) - new Date(b.scheduled_start_time),
+  );
+
+  // Greedy lane assignment — place each session in the earliest free lane
+  const laneEndTimes = [];
+  const sessionLane = {};
+
+  for (const session of sorted) {
+    const startMs = new Date(session.scheduled_start_time).getTime();
+    const endMs = new Date(session.scheduled_end_time || session.scheduled_start_time).getTime();
+
+    let lane = laneEndTimes.findIndex((endTime) => endTime <= startMs);
+    if (lane === -1) {
+      lane = laneEndTimes.length; // open a new lane
+    }
+    laneEndTimes[lane] = endMs;
+    sessionLane[session.id] = lane;
+  }
+
+  // Per-session totalLanes = (max lane among concurrent sessions) + 1,
+  // so isolated sessions expand to full width
+  const result = {};
+  for (const session of sorted) {
+    const startMs = new Date(session.scheduled_start_time).getTime();
+    const endMs = new Date(session.scheduled_end_time || session.scheduled_start_time).getTime();
+
+    const concurrent = sorted.filter((other) => {
+      const os = new Date(other.scheduled_start_time).getTime();
+      const oe = new Date(other.scheduled_end_time || other.scheduled_start_time).getTime();
+      return os < endMs && oe > startMs;
+    });
+
+    const maxLane = Math.max(...concurrent.map((s) => sessionLane[s.id]));
+    result[session.id] = { lane: sessionLane[session.id], totalLanes: maxLane + 1 };
+  }
+
+  return result;
+};
+
+const TimeGrid = ({ days, sessionMap, onSessionClick }) => {
   const todayKey = toDateKey(new Date());
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
-      {days.map((day, i) => {
-        const isToday = toDateKey(day) === todayKey;
-        const isWeekend = isWeekendDay(day);
-        return (
-          <div key={toDateKey(day)}>
-            {/* Column header */}
+    <div style={{ border: '1px solid #dee2e6', borderRadius: 4, overflow: 'hidden' }}>
+      {/* Day header row */}
+      <div style={{
+        display: 'flex',
+        borderBottom: '2px solid #dee2e6',
+        background: '#fff',
+        position: 'sticky',
+        top: 0,
+        zIndex: 2,
+      }}
+      >
+        {/* Empty corner above time axis */}
+        <div style={{ width: TIME_COL_WIDTH, flexShrink: 0 }} />
+        {days.map((day) => {
+          const isToday = toDateKey(day) === todayKey;
+          const isWeekend = isWeekendDay(day);
+          return (
             <div
+              key={toDateKey(day)}
               style={{
+                flex: 1,
                 textAlign: 'center',
+                padding: '8px 4px',
                 fontSize: 12,
                 fontWeight: 600,
-                // Today → blue; Weekend → muted grey; Weekday → normal grey
                 color: isToday ? '#4f46e5' : isWeekend ? '#adb5bd' : '#6c757d',
-                padding: '4px 0 6px',
+                borderLeft: '1px solid #dee2e6',
               }}
             >
-              {WEEK_DAY_NAMES[i]} {day.getDate()}
+              {day.toLocaleDateString('en-US', { weekday: 'short' })} {day.getDate()}
             </div>
-            <DayCell
-              date={day}
-              sessions={sessionMap.get(toDateKey(day)) || []}
-              onClick={onDayClick}
-              cellMinHeight={200}
-            />
+          );
+        })}
+      </div>
+
+      {/* Scrollable body */}
+      <div style={{ overflowY: 'auto', maxHeight: 580 }}>
+        <div style={{ display: 'flex', height: (END_HOUR - START_HOUR) * HOUR_HEIGHT + 14, paddingTop: 14 }}>
+
+          {/* Time axis */}
+          <div style={{ width: TIME_COL_WIDTH, flexShrink: 0, position: 'relative' }}>
+            {HOURS.map((hour) => (
+              <div
+                key={hour}
+                style={{
+                  position: 'absolute',
+                  top: (hour - START_HOUR) * HOUR_HEIGHT - 7,
+                  right: 6,
+                  fontSize: 10,
+                  color: '#9ca3af',
+                  userSelect: 'none',
+                  lineHeight: 1,
+                }}
+              >
+                {formatHour(hour)}
+              </div>
+            ))}
           </div>
-        );
-      })}
+
+          {/* Day columns */}
+          {days.map((day) => {
+            const key = toDateKey(day);
+            const isToday = key === todayKey;
+            const isWeekend = isWeekendDay(day);
+            const daySessions = sessionMap.get(key) || [];
+            const layout = layoutSessions(daySessions);
+
+            return (
+              <div
+                key={key}
+                style={{
+                  flex: 1,
+                  position: 'relative',
+                  borderLeft: '1px solid #dee2e6',
+                  background: getCellBackground(isToday, isWeekend),
+                }}
+              >
+                {/* Hour grid lines */}
+                {HOURS.map((hour) => (
+                  <div
+                    key={hour}
+                    style={{
+                      position: 'absolute',
+                      top: (hour - START_HOUR) * HOUR_HEIGHT,
+                      left: 0,
+                      right: 0,
+                      borderTop: '1px solid #e5e7eb',
+                    }}
+                  />
+                ))}
+
+                {/* Session blocks — rendered side-by-side when overlapping */}
+                {daySessions.map((session) => {
+                  const { top, height } = getSessionPosition(session);
+                  const { lane, totalLanes } = layout[session.id] || { lane: 0, totalLanes: 1 };
+                  const colWidthPct = (100 / totalLanes).toFixed(2);
+                  const colLeftPct = ((lane / totalLanes) * 100).toFixed(2);
+                  const bg = statusColors[session.status] || '#6c757d';
+                  const startTime = new Date(session.scheduled_start_time)
+                    .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+                  return (
+                    <button
+                      key={session.id}
+                      type="button"
+                      onClick={() => onSessionClick(day, daySessions)}
+                      title={`${session.title} — ${startTime}`}
+                      style={{
+                        position: 'absolute',
+                        top,
+                        left: `calc(${colLeftPct}% + 2px)`,
+                        width: `calc(${colWidthPct}% - 4px)`,
+                        height,
+                        background: bg,
+                        color: '#fff',
+                        borderRadius: 3,
+                        border: 'none',
+                        padding: '2px 6px',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        overflow: 'hidden',
+                        zIndex: 1,
+                        fontSize: 11,
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      <strong style={{
+                        display: 'block',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                      >
+                        {session.title}
+                      </strong>
+                      {/* Only show time label when block is tall enough */}
+                      {height >= 30 && (
+                        <span style={{ opacity: 0.85, fontSize: 10 }}>{startTime}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };
 
-// ─── SessionCard (shared by DayView and Modal) ────────────────────────────────
+// ─── WeekGrid ─────────────────────────────────────────────────────────────────
+
+const WeekGrid = ({ currentDate, sessionMap, onDayClick }) => (
+  <TimeGrid days={getWeekDays(currentDate)} sessionMap={sessionMap} onSessionClick={onDayClick} />
+);
+
+// ─── DayView ──────────────────────────────────────────────────────────────────
+
+const DayView = ({ currentDate, sessionMap, onDayClick }) => (
+  <TimeGrid days={[currentDate]} sessionMap={sessionMap} onSessionClick={onDayClick} />
+);
+
+// ─── SessionCard (used inside the day modal) ──────────────────────────────────
 
 const SessionCard = ({ session }) => {
   const statusLabel = SESSION_STATUS_LABELS[session.status] || session.status;
@@ -301,24 +522,6 @@ const SessionCard = ({ session }) => {
   );
 };
 
-// ─── DayView ──────────────────────────────────────────────────────────────────
-
-const DayView = ({ currentDate, sessionMap }) => {
-  const sessions = sessionMap.get(toDateKey(currentDate)) || [];
-  const label = currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-
-  return (
-    <div>
-      <h5 className="mb-3">{label}</h5>
-      {sessions.length === 0 ? (
-        <p className="text-muted text-center py-5">No sessions scheduled for this day.</p>
-      ) : (
-        sessions.map((session) => <SessionCard key={session.id} session={session} />)
-      )}
-    </div>
-  );
-};
-
 // ─── CalendarView ─────────────────────────────────────────────────────────────
 
 const CalendarView = ({ sessions }) => {
@@ -349,21 +552,21 @@ const CalendarView = ({ sessions }) => {
     setCurrentDate(d);
   };
 
-  // ── Day cell click ──
+  // ── Session / day click → open modal ──
   const handleDayClick = (date, daySessions) => {
-    if (view === VIEWS.DAY) return; // Day view shows inline; no modal needed
     setSelectedDay({ date, sessions: daySessions });
   };
 
   const modalTitle = selectedDay
-    ? selectedDay.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+    ? selectedDay.date.toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+    })
     : '';
 
   return (
     <div>
       {/* ── Toolbar ── */}
       <div className="d-flex align-items-center flex-wrap mb-3" style={{ gap: 8 }}>
-        {/* Prev / Next */}
         <IconButton
           src={ChevronLeft}
           iconAs={ChevronLeft}
@@ -379,12 +582,10 @@ const CalendarView = ({ sessions }) => {
           size="sm"
         />
 
-        {/* Range label */}
         <span style={{ fontWeight: 600, fontSize: 16, minWidth: 180 }}>
           {formatRangeLabel(view, currentDate)}
         </span>
 
-        {/* Today */}
         <Button variant="outline-primary" size="sm" onClick={goToToday}>
           Today
         </Button>
@@ -412,10 +613,10 @@ const CalendarView = ({ sessions }) => {
         <WeekGrid currentDate={currentDate} sessionMap={sessionMap} onDayClick={handleDayClick} />
       )}
       {view === VIEWS.DAY && (
-        <DayView currentDate={currentDate} sessionMap={sessionMap} />
+        <DayView currentDate={currentDate} sessionMap={sessionMap} onDayClick={handleDayClick} />
       )}
 
-      {/* ── Day modal (Month + Week views) ── */}
+      {/* ── Day modal (all views) ── */}
       {selectedDay && (
         <StandardModal
           isOpen

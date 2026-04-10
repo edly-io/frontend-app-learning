@@ -222,5 +222,225 @@ export const getStudentSessions = async () => {
       status: 'scheduled',
       meeting_join_url: 'https://zoom.us/j/mock-16',
     },
+
+    // ── This week – extra sessions (varied times + overlaps) ──────────────────
+    // Monday: 2 extra → total 3 on Monday → triggers "+1 more" in month view
+    {
+      id: 17,
+      title: 'Morning Briefing',
+      course_name: 'FBR Tax Course',
+      scheduled_start_time: weekday(0, 1, 8, 0),
+      scheduled_end_time: weekday(0, 1, 8, 45),
+      status: 'completed',
+      meeting_join_url: 'https://zoom.us/j/mock-17',
+    },
+    {
+      id: 18,
+      title: 'Afternoon Tax Review',
+      course_name: 'FBR Tax Course',
+      scheduled_start_time: weekday(0, 1, 14, 0),
+      scheduled_end_time: weekday(0, 1, 15, 30),
+      status: 'scheduled',
+      meeting_join_url: 'https://zoom.us/j/mock-18',
+    },
+    // ^ Monday now has ids 8, 17, 18 → 3 sessions → "+1 more"
+
+    // Tuesday: 3 sessions — ids 19 & 20 overlap (9:00–10:30 and 10:00–11:30)
+    {
+      id: 19,
+      title: 'Python Data Structures',
+      course_name: 'Python for Beginners',
+      scheduled_start_time: weekday(0, 2, 9, 0),
+      scheduled_end_time: weekday(0, 2, 10, 30),
+      status: 'scheduled',
+      meeting_join_url: 'https://zoom.us/j/mock-19',
+    },
+    {
+      id: 20,
+      title: 'Tax Forms Deep Dive',
+      course_name: 'FBR Tax Course',
+      scheduled_start_time: weekday(0, 2, 10, 0),
+      scheduled_end_time: weekday(0, 2, 11, 30),
+      status: 'scheduled',
+      meeting_join_url: 'https://zoom.us/j/mock-20',
+    },
+    {
+      id: 21,
+      title: 'Afternoon Lab Session',
+      course_name: 'Python for Beginners',
+      scheduled_start_time: weekday(0, 2, 13, 0),
+      scheduled_end_time: weekday(0, 2, 14, 30),
+      status: 'scheduled',
+      meeting_join_url: 'https://zoom.us/j/mock-21',
+    },
+
+    // Wednesday: id 22 overlaps with existing id 9 (10:00–12:00)
+    {
+      id: 22,
+      title: 'Import Procedures Q&A',
+      course_name: 'FBR Tax Course',
+      scheduled_start_time: weekday(0, 3, 11, 0),
+      scheduled_end_time: weekday(0, 3, 12, 30),
+      status: 'scheduled',
+      meeting_join_url: 'https://zoom.us/j/mock-22',
+    },
+
+    // Thursday: ids 23 & 24 overlap (9:00–10:30 and 9:30–11:00), id 25 separate
+    {
+      id: 23,
+      title: 'Algorithms Workshop',
+      course_name: 'Python for Beginners',
+      scheduled_start_time: weekday(0, 4, 9, 0),
+      scheduled_end_time: weekday(0, 4, 10, 30),
+      status: 'scheduled',
+      meeting_join_url: 'https://zoom.us/j/mock-23',
+    },
+    {
+      id: 24,
+      title: 'Tax Exemptions Seminar',
+      course_name: 'FBR Tax Course',
+      scheduled_start_time: weekday(0, 4, 9, 30),
+      scheduled_end_time: weekday(0, 4, 11, 0),
+      status: 'scheduled',
+      meeting_join_url: 'https://zoom.us/j/mock-24',
+    },
+    {
+      id: 25,
+      title: 'Code Review Session',
+      course_name: 'Python for Beginners',
+      scheduled_start_time: weekday(0, 4, 15, 0),
+      scheduled_end_time: weekday(0, 4, 16, 30),
+      status: 'scheduled',
+      meeting_join_url: 'https://zoom.us/j/mock-25',
+    },
+
+    // Friday (today): id 26 overlaps with existing id 10 (10:00–11:30)
+    {
+      id: 26,
+      title: 'FBR Compliance Check',
+      course_name: 'FBR Tax Course',
+      scheduled_start_time: weekday(0, 5, 10, 0),
+      scheduled_end_time: weekday(0, 5, 11, 0),
+      status: 'in_progress',
+      meeting_join_url: 'https://zoom.us/j/mock-26',
+    },
+    {
+      id: 27,
+      title: 'Wrap-up Discussion',
+      course_name: 'Python for Beginners',
+      scheduled_start_time: weekday(0, 5, 13, 30),
+      scheduled_end_time: weekday(0, 5, 15, 0),
+      status: 'scheduled',
+      meeting_join_url: 'https://zoom.us/j/mock-27',
+    },
+
+    // ── Next week – more sessions for month "+N more" ─────────────────────────
+    // Monday next week: 2 extra → total 3 (ids 11, 28, 29) → "+1 more"
+    {
+      id: 28,
+      title: 'OOP Design Patterns',
+      course_name: 'Python for Beginners',
+      scheduled_start_time: weekday(1, 1, 8, 30),
+      scheduled_end_time: weekday(1, 1, 9, 30),
+      status: 'scheduled',
+      meeting_join_url: 'https://zoom.us/j/mock-28',
+    },
+    {
+      id: 29,
+      title: 'Tax Refund Workshop',
+      course_name: 'FBR Tax Course',
+      scheduled_start_time: weekday(1, 1, 14, 0),
+      scheduled_end_time: weekday(1, 1, 15, 30),
+      status: 'scheduled',
+      meeting_join_url: 'https://zoom.us/j/mock-29',
+    },
+
+    // Tuesday next week: 3 sessions — ids 30 & 31 overlap → "+1 more"
+    {
+      id: 30,
+      title: 'REST API Development',
+      course_name: 'Python for Beginners',
+      scheduled_start_time: weekday(1, 2, 10, 0),
+      scheduled_end_time: weekday(1, 2, 11, 30),
+      status: 'scheduled',
+      meeting_join_url: 'https://zoom.us/j/mock-30',
+    },
+    {
+      id: 31,
+      title: 'Withholding Tax Rules',
+      course_name: 'FBR Tax Course',
+      scheduled_start_time: weekday(1, 2, 10, 30),
+      scheduled_end_time: weekday(1, 2, 12, 0),
+      status: 'scheduled',
+      meeting_join_url: 'https://zoom.us/j/mock-31',
+    },
+    {
+      id: 32,
+      title: 'Database Integration',
+      course_name: 'Python for Beginners',
+      scheduled_start_time: weekday(1, 2, 14, 0),
+      scheduled_end_time: weekday(1, 2, 15, 30),
+      status: 'scheduled',
+      meeting_join_url: 'https://zoom.us/j/mock-32',
+    },
+
+    // ── 2 weeks out – 4 sessions on Monday → "+2 more" in month view ──────────
+    {
+      id: 33,
+      title: 'Python Testing & CI',
+      course_name: 'Python for Beginners',
+      scheduled_start_time: weekday(2, 1, 9, 0),
+      scheduled_end_time: weekday(2, 1, 10, 0),
+      status: 'scheduled',
+      meeting_join_url: 'https://zoom.us/j/mock-33',
+    },
+    {
+      id: 34,
+      title: 'Tax Appeals Process',
+      course_name: 'FBR Tax Course',
+      scheduled_start_time: weekday(2, 1, 10, 0),
+      scheduled_end_time: weekday(2, 1, 11, 30),
+      status: 'scheduled',
+      meeting_join_url: 'https://zoom.us/j/mock-34',
+    },
+    {
+      id: 35,
+      title: 'Package Management',
+      course_name: 'Python for Beginners',
+      scheduled_start_time: weekday(2, 1, 11, 30),
+      scheduled_end_time: weekday(2, 1, 13, 0),
+      status: 'scheduled',
+      meeting_join_url: 'https://zoom.us/j/mock-35',
+    },
+    {
+      id: 36,
+      title: 'Tax Authority Interface',
+      course_name: 'FBR Tax Course',
+      scheduled_start_time: weekday(2, 1, 14, 0),
+      scheduled_end_time: weekday(2, 1, 15, 30),
+      status: 'scheduled',
+      meeting_join_url: 'https://zoom.us/j/mock-36',
+    },
+    // ^ ids 33–36 all on Monday 2 weeks out → 4 sessions → "+2 more"
+
+    // Wednesday 2 weeks out: ids 37 & 38 overlap (10:00–11:30 and 10:30–12:00)
+    {
+      id: 37,
+      title: 'Django Fundamentals',
+      course_name: 'Python for Beginners',
+      scheduled_start_time: weekday(2, 3, 10, 0),
+      scheduled_end_time: weekday(2, 3, 11, 30),
+      status: 'scheduled',
+      meeting_join_url: 'https://zoom.us/j/mock-37',
+    },
+    {
+      id: 38,
+      title: 'E-Filing Workshop',
+      course_name: 'FBR Tax Course',
+      scheduled_start_time: weekday(2, 3, 10, 30),
+      scheduled_end_time: weekday(2, 3, 12, 0),
+      status: 'scheduled',
+      meeting_join_url: 'https://zoom.us/j/mock-38',
+    },
   ];
 };
