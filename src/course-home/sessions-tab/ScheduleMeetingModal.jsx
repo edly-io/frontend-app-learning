@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { StandardModal, Button, Form, Spinner, Alert, OverlayTrigger, Tooltip } from '@openedx/paragon';
-import { createSession, updateSession } from './api';
+import { createSession, updateSession, fetchCourseRuns, fetchInstructors } from './api';
 import { toISOString, toDateTimeLocal, extractApiError } from './utils';
+import SearchableSelect from './SearchableSelect';
 
 // ─── Recurrence constants ─────────────────────────────────────────────────────
 
@@ -133,6 +134,61 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
   const [endDateInput, setEndDateInput] = useState('');
   const [endTimeInput, setEndTimeInput] = useState('');
 
+  // ─── Course run & instructor ───────────────────────────────────────────────
+  const [courseRunOptions, setCourseRunOptions] = useState([]);
+  const [instructorOptions, setInstructorOptions] = useState([]);
+  const [selectedCourseRun, setSelectedCourseRun] = useState(null);
+  const [selectedInstructor, setSelectedInstructor] = useState(null);
+  const [courseRunsLoading, setCourseRunsLoading] = useState(false);
+  const [instructorsLoading, setInstructorsLoading] = useState(false);
+
+  // Fetch the full course run list once each time the modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+    setCourseRunsLoading(true);
+    fetchCourseRuns()
+      .then((data) => setCourseRunOptions(data.map((r) => ({ value: r.id, label: r.title }))))
+      .catch(() => {}) // silently fail — modal remains usable
+      .finally(() => setCourseRunsLoading(false));
+  }, [isOpen]);
+
+  // Pre-fill course run once options are loaded:
+  //   edit mode  → match session.course_id
+  //   create mode → match the courseId prop (course-scoped sessions tab)
+  useEffect(() => {
+    if (courseRunOptions.length === 0) return;
+    const targetId = session ? String(session.course_id) : courseId;
+    if (!targetId) return;
+    const match = courseRunOptions.find((r) => r.value === targetId);
+    if (match) setSelectedCourseRun(match);
+  }, [courseRunOptions, session, courseId]);
+
+  // Fetch instructors whenever the selected course run changes;
+  // also clear the instructor selection so it stays consistent with the new course
+  const selectedCourseRunId = selectedCourseRun?.value ?? null;
+  useEffect(() => {
+    if (!selectedCourseRunId) {
+      setInstructorOptions([]);
+      setSelectedInstructor(null);
+      return;
+    }
+    setInstructorsLoading(true);
+    setSelectedInstructor(null);
+    fetchInstructors(selectedCourseRunId)
+      .then((data) => setInstructorOptions(
+        data.map((i) => ({ value: i.user_id, label: i.name, email: i.email })),
+      ))
+      .catch(() => {})
+      .finally(() => setInstructorsLoading(false));
+  }, [selectedCourseRunId]);
+
+  // Pre-fill instructor once options are loaded (edit mode only)
+  useEffect(() => {
+    if (!session || instructorOptions.length === 0) return;
+    const match = instructorOptions.find((i) => i.email === session.instructor_email);
+    if (match) setSelectedInstructor(match);
+  }, [instructorOptions, session]);
+
   // Pre-fill form when editing
   useEffect(() => {
     if (session) {
@@ -208,6 +264,9 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
       setEndType('count');
       setEndCount(10);
       setEndDate('');
+      setSelectedCourseRun(null);
+      setSelectedInstructor(null);
+      setInstructorOptions([]);
     }
   }, [session, isOpen]);
 
@@ -272,6 +331,16 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
   const validateForm = () => {
     if (!formData.title.trim()) {
       setError('Title is required');
+      setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+      return false;
+    }
+    if (!selectedCourseRun) {
+      setError('Course is required');
+      setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+      return false;
+    }
+    if (!selectedInstructor) {
+      setError('Instructor is required');
       setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
       return false;
     }
@@ -375,6 +444,8 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
 
     try {
       const recurrence = buildRecurrence();
+      // Use the explicitly selected course run; fall back to the prop for backwards-compat
+      const effectiveCourseId = selectedCourseRun?.value || courseId;
       const sessionData = {
         title: formData.title,
         description: formData.description,
@@ -383,6 +454,7 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
         timezone: timezoneName,
         is_recurring: isRecurring,
         // Platform is always 'zoom' and is_attendance_mandatory is always true (backend sets these)
+        ...(selectedInstructor && { instructor_email: selectedInstructor.email }),
       };
       if (recurrence) {
         sessionData.recurrence = recurrence;
@@ -391,10 +463,10 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
       let result;
       if (session) {
         // Update existing session
-        result = await updateSession(courseId, session.id, sessionData);
+        result = await updateSession(effectiveCourseId, session.id, sessionData);
       } else {
         // Create new session
-        result = await createSession(courseId, sessionData);
+        result = await createSession(effectiveCourseId, sessionData);
       }
       
       onSuccess(result);
@@ -464,6 +536,29 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
             placeholder="e.g., Week 5 Live Session"
           />
         </Form.Group>
+
+        <SearchableSelect
+          id="session-course-run"
+          label="Course"
+          options={courseRunOptions}
+          value={selectedCourseRun}
+          onChange={setSelectedCourseRun}
+          placeholder="Search by course title..."
+          loading={courseRunsLoading}
+          required
+        />
+
+        <SearchableSelect
+          id="session-instructor"
+          label="Instructor"
+          options={instructorOptions}
+          value={selectedInstructor}
+          onChange={setSelectedInstructor}
+          placeholder={selectedCourseRun ? 'Search by name...' : 'Select a course first'}
+          loading={instructorsLoading}
+          disabled={!selectedCourseRun}
+          required
+        />
 
         <Form.Group className="mb-3">
           <Form.Label>Description</Form.Label>

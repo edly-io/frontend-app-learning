@@ -46,8 +46,39 @@ export const updateAttendanceRecord = async (recordId, recordData) => {
   return data;
 };
 
-// ─── Student Calendar API ─────────────────────────────────────────────────────
-// Returns all sessions for the authenticated student across all their courses.
+// ─── Course Run & Instructor lookup APIs ──────────────────────────────────────
+// Used to populate the searchable autocomplete fields in ScheduleMeetingModal.
+
+/**
+ * Fetch all course runs accessible to the requesting instructor.
+ * Searched by `title` in the frontend autocomplete.
+ *
+ * GET /fbr/api/attendance/v1/course-runs/
+ * Returns: [{ id: "course-v1:Org+Course+Run", title: "..." }, ...]
+ */
+export const fetchCourseRuns = async () => {
+  const client = getAuthenticatedHttpClient();
+  const { data } = await client.get(`${getBaseUrl()}/course-runs/`);
+  return data;
+};
+
+/**
+ * Fetch instructors / course-team members for a specific course run.
+ * Called after the user selects a course run in ScheduleMeetingModal.
+ * Searched by `name` in the frontend autocomplete.
+ *
+ * GET /fbr/api/attendance/v1/courses/{courseId}/instructors/
+ * Returns: [{ user_id, email, name }, ...]
+ *
+ * @param {string} courseId - Course key string, e.g. "course-v1:Org+Course+Run"
+ */
+export const fetchInstructors = async (courseId) => {
+  const client = getAuthenticatedHttpClient();
+  const { data } = await client.get(`${getBaseUrl()}/courses/${courseId}/instructors/`);
+  return data;
+};
+
+// ─── Student Calendar API ─────────────────────────────────────────────────────// Returns all sessions for the authenticated student across all their courses.
 // TODO: Replace mock data with real API call:
 //   GET /fbr/api/attendance/v1/my-sessions/
 export const getStudentSessions = async () => {
