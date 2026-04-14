@@ -171,25 +171,27 @@ const SessionPopover = ({
         <div className="mb-2">
           <Badge variant={getStatusVariant(session.status)}>{statusLabel}</Badge>
         </div>
-        <div className="d-flex" style={{ gap: 6, flexWrap: 'wrap' }}>
-          <Button variant="tertiary" size="sm" iconBefore={EditOutline} onClick={handleEdit}>
-            Edit
-          </Button>
-          <Button
-            variant="tertiary"
-            size="sm"
-            iconBefore={DeleteOutline}
-            onClick={handleDelete}
-            style={{ color: '#dc3545' }}
-          >
-            Delete
-          </Button>
-          {session.meeting_join_url && (
-            <Button variant="primary" size="sm" iconAfter={Launch} onClick={handleJoin}>
-              Join
+        {session.status === 'scheduled' && (
+          <div className="d-flex" style={{ gap: 6, flexWrap: 'wrap' }}>
+            <Button variant="tertiary" size="sm" iconBefore={EditOutline} onClick={handleEdit}>
+              Edit
             </Button>
-          )}
-        </div>
+            <Button
+              variant="tertiary"
+              size="sm"
+              iconBefore={DeleteOutline}
+              onClick={handleDelete}
+              style={{ color: '#dc3545' }}
+            >
+              Delete
+            </Button>
+            {session.meeting_join_url && (
+              <Button variant="primary" size="sm" iconAfter={Launch} onClick={handleJoin}>
+                Join
+              </Button>
+            )}
+          </div>
+        )}
       </Popover.Content>
     </Popover>
   );
@@ -288,35 +290,37 @@ const DayPopover = ({
                 <div className="text-muted" style={{ fontSize: 12 }}>{session.course_name}</div>
               )}
               <div style={{ fontSize: 12, color: '#6c757d' }}>{formatTimeRange(session)}</div>
-              <div className="mt-1 d-flex" style={{ gap: 4, flexWrap: 'wrap' }}>
-                <Button
-                  variant="tertiary"
-                  size="sm"
-                  iconBefore={EditOutline}
-                  onClick={(e) => handleEdit(e, session)}
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant="tertiary"
-                  size="sm"
-                  iconBefore={DeleteOutline}
-                  style={{ color: '#dc3545' }}
-                  onClick={(e) => handleDelete(e, session)}
-                >
-                  Delete
-                </Button>
-                {session.meeting_join_url && (
+              {session.status === 'scheduled' && (
+                <div className="mt-1 d-flex" style={{ gap: 4, flexWrap: 'wrap' }}>
                   <Button
-                    variant="primary"
+                    variant="tertiary"
                     size="sm"
-                    iconAfter={Launch}
-                    onClick={(e) => handleJoin(e, session)}
+                    iconBefore={EditOutline}
+                    onClick={(e) => handleEdit(e, session)}
                   >
-                    Join
+                    Edit
                   </Button>
-                )}
-              </div>
+                  <Button
+                    variant="tertiary"
+                    size="sm"
+                    iconBefore={DeleteOutline}
+                    style={{ color: '#dc3545' }}
+                    onClick={(e) => handleDelete(e, session)}
+                  >
+                    Delete
+                  </Button>
+                  {session.meeting_join_url && (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      iconAfter={Launch}
+                      onClick={(e) => handleJoin(e, session)}
+                    >
+                      Join
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -357,10 +361,13 @@ const DayCell = ({
   const hasSessions = sessions.length > 0;
   const isDayOpen = openDayKey === dateKey;
 
-  const setDayOpen = (next) => setOpenDayKey((curr) => {
-    if (next) { return dateKey; }
-    return curr === dateKey ? null : curr;
-  });
+  const setDayOpen = (next) => {
+    if (next) { setOpenPopoverId(null); }
+    setOpenDayKey((curr) => {
+      if (next) { return dateKey; }
+      return curr === dateKey ? null : curr;
+    });
+  };
 
   const cellContent = (
     <div
@@ -452,7 +459,7 @@ const DayCell = ({
       {overflow > 0 && (
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); setDayOpen(true); }}
+          onClick={(e) => { e.stopPropagation(); setOpenPopoverId(null); setDayOpen(true); }}
           style={{
             background: 'none',
             border: 'none',
