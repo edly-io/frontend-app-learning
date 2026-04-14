@@ -1,19 +1,64 @@
-import React, { useState, useEffect } from 'react';
+import React, {
+  useState, useEffect, useMemo, useCallback,
+} from 'react';
 import {
   Container, Spinner, Alert, Toast, StandardModal, Button,
 } from '@openedx/paragon';
 import { FooterSlot } from '@edx/frontend-component-footer';
-import { getStudentSessions, deleteSession } from '../api';
+import { getCalendarSessions, deleteSession } from '../api';
 import { extractApiError } from '../utils';
 import ScheduleMeetingModal from '../ScheduleMeetingModal';
 import HeaderSlot from '../../../plugin-slots/HeaderSlot';
-import CalendarView from './CalendarView';
+import CalendarView, { getMonthGridDays, getWeekDays } from './CalendarView';
+
+const VIEWS = { MONTH: 'month', WEEK: 'week', DAY: 'day' };
+
+/**
+ * Compute the [start, end) date window the calendar currently shows.
+ * Month → full 6-week grid (Sunday before the 1st → Saturday after the last day)
+ * Week  → Sunday → following Sunday
+ * Day   → start of day → start of next day
+ */
+const computeFetchWindow = (view, currentDate) => {
+  if (view === VIEWS.MONTH) {
+    const days = getMonthGridDays(currentDate);
+    const start = new Date(days[0]);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(days[days.length - 1]);
+    end.setDate(end.getDate() + 1);
+    end.setHours(0, 0, 0, 0);
+    return { start, end };
+  }
+  if (view === VIEWS.WEEK) {
+    const days = getWeekDays(currentDate);
+    const start = new Date(days[0]);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(days[6]);
+    end.setDate(end.getDate() + 1);
+    end.setHours(0, 0, 0, 0);
+    return { start, end };
+  }
+  // Day view
+  const start = new Date(currentDate);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return { start, end };
+};
 
 const CalendarPage = () => {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Calendar navigation state — lifted here because it drives the fetch window.
+  const [view, setView] = useState(VIEWS.MONTH);
+  const [currentDate, setCurrentDate] = useState(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
 
   // modalSession: undefined = closed | null = create | Session object = edit
   const [modalSession, setModalSession] = useState(undefined);
@@ -22,21 +67,34 @@ const CalendarPage = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
 
+  const { start, end } = useMemo(
+    () => computeFetchWindow(view, currentDate),
+    [view, currentDate],
+  );
+
+  // Re-fetch whenever the visible window changes or a mutation triggers a refresh.
+  // The backend requires start_date + end_date and enforces a 45-day max window.
   useEffect(() => {
+    let cancelled = false;
     const fetchSessions = async () => {
       setLoading(true);
       try {
-        const data = await getStudentSessions();
-        setSessions(data);
-        setError('');
+        const data = await getCalendarSessions(start.toISOString(), end.toISOString());
+        if (!cancelled) {
+          setSessions(data);
+          setError('');
+        }
       } catch (err) {
-        setError('Failed to load sessions. Please try again later.');
+        if (!cancelled) {
+          setError('Failed to load sessions. Please try again later.');
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) { setLoading(false); }
       }
     };
     fetchSessions();
-  }, [refreshKey]);
+    return () => { cancelled = true; };
+  }, [start, end, refreshKey]);
 
   const showSuccess = (message) => {
     setToastMessage(message);
@@ -74,8 +132,35 @@ const CalendarPage = () => {
     setDeleteError('');
   };
 
+  // ── Calendar navigation handlers passed down to CalendarView ──
+  const handleNavigate = useCallback((direction) => {
+    setCurrentDate((prev) => {
+      const d = new Date(prev);
+      if (view === VIEWS.MONTH) {
+        d.setMonth(d.getMonth() + direction);
+      } else if (view === VIEWS.WEEK) {
+        d.setDate(d.getDate() + direction * 7);
+      } else {
+        d.setDate(d.getDate() + direction);
+      }
+      return d;
+    });
+  }, [view]);
+
+  const handleGoToToday = useCallback(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    setCurrentDate(d);
+  }, []);
+
+  const handleViewChange = useCallback((nextView) => {
+    setView(nextView);
+  }, []);
+
   const renderContent = () => {
-    if (loading) {
+    // Initial load — show full-page spinner. Subsequent navigations use the
+    // inline loading opacity inside CalendarView instead so the grid stays visible.
+    if (loading && sessions.length === 0 && !error) {
       return (
         <Container className="py-5 text-center">
           <Spinner animation="border" />
@@ -97,9 +182,15 @@ const CalendarPage = () => {
         <h2 className="mb-4">My Sessions Calendar</h2>
         <CalendarView
           sessions={sessions}
+          view={view}
+          currentDate={currentDate}
+          onViewChange={handleViewChange}
+          onNavigate={handleNavigate}
+          onGoToToday={handleGoToToday}
           onScheduleNew={handleScheduleNew}
           onEditSession={handleEditSession}
           onDeleteSession={handleDeleteSession}
+          loading={loading}
         />
       </Container>
     );

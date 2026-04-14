@@ -34,7 +34,7 @@ const getWeekStart = (date) => {
 };
 
 /** Returns an array of 7 Date objects for Mon–Sun of the week containing `date`. */
-const getWeekDays = (date) => {
+export const getWeekDays = (date) => {
   const start = getWeekStart(date);
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(start);
@@ -44,7 +44,7 @@ const getWeekDays = (date) => {
 };
 
 /** Returns all Date objects for the 4–6 week grid rows of a month view. */
-const getMonthGridDays = (date) => {
+export const getMonthGridDays = (date) => {
   const year = date.getFullYear();
   const month = date.getMonth();
   const firstDay = new Date(year, month, 1);
@@ -167,6 +167,9 @@ const SessionPopover = ({
         {session.course_name && (
           <div className="text-muted mb-1">{session.course_name}</div>
         )}
+        {session.instructor_name && (
+          <div className="text-muted mb-1">Instructor: {session.instructor_name}</div>
+        )}
         <div className="mb-1">{formatTimeRange(session)}</div>
         <div className="mb-2">
           <Badge variant={getStatusVariant(session.status)}>{statusLabel}</Badge>
@@ -265,7 +268,10 @@ const DayPopover = ({
           ({sessions.length} session{sessions.length !== 1 ? 's' : ''})
         </span>
       </Popover.Title>
-      <Popover.Content style={{ fontSize: 13, maxHeight: 360, overflowY: 'auto', padding: 8 }}>
+      <Popover.Content style={{
+        fontSize: 13, maxHeight: 360, overflowY: 'auto', padding: 8,
+      }}
+      >
         {sessions.map((session) => (
           <div
             key={session.id}
@@ -288,6 +294,9 @@ const DayPopover = ({
               </div>
               {session.course_name && (
                 <div className="text-muted" style={{ fontSize: 12 }}>{session.course_name}</div>
+              )}
+              {session.instructor_name && (
+                <div className="text-muted" style={{ fontSize: 12 }}>Instructor: {session.instructor_name}</div>
               )}
               <div style={{ fontSize: 12, color: '#6c757d' }}>{formatTimeRange(session)}</div>
               {session.status === 'scheduled' && (
@@ -776,22 +785,39 @@ const TimeGrid = ({
                           textAlign: 'left',
                           overflow: 'hidden',
                           zIndex: 1,
-                          fontSize: 11,
-                          lineHeight: 1.3,
+                          fontSize: totalLanes >= 2 ? 10 : 11,
+                          lineHeight: 1.25,
                         }}
                       >
                         <strong style={{
-                          display: 'block',
-                          whiteSpace: 'nowrap',
+                          display: '-webkit-box',
+                          WebkitLineClamp: Math.max(1, Math.min(3, Math.floor((height - 4) / 14))),
+                          WebkitBoxOrient: 'vertical',
                           overflow: 'hidden',
-                          textOverflow: 'ellipsis',
+                          overflowWrap: 'anywhere',
+                          wordBreak: 'break-word',
                         }}
                         >
                           {session.title}
                         </strong>
-                        {/* Only show time label when block is tall enough */}
-                        {height >= 30 && (
+                        {/* Time label — hidden in narrow (3+ lane) columns; popover has it */}
+                        {height >= 30 && totalLanes < 3 && (
                           <span style={{ opacity: 0.85, fontSize: 10 }}>{startTime}</span>
+                        )}
+                        {/* Course name — only in full-width columns with enough height */}
+                        {height >= 45 && totalLanes < 2 && session.course_name && (
+                          <span
+                            style={{
+                              opacity: 0.85,
+                              fontSize: 10,
+                              display: 'block',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {session.course_name}
+                          </span>
                         )}
                       </button>
                     </SessionPopover>
@@ -841,14 +867,9 @@ const DayView = ({
 // ─── CalendarView ─────────────────────────────────────────────────────────────
 
 const CalendarView = ({
-  sessions, onScheduleNew, onEditSession, onDeleteSession,
+  sessions, view, currentDate, onViewChange, onNavigate, onGoToToday,
+  onScheduleNew, onEditSession, onDeleteSession, loading = false,
 }) => {
-  const [view, setView] = useState(VIEWS.MONTH);
-  const [currentDate, setCurrentDate] = useState(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  });
   // Only one popover open at a time; null = none. Chip clicks and outside
   // clicks flip this; Edit/Delete actions also reset it before bubbling up.
   const [openPopoverId, setOpenPopoverId] = useState(null);
@@ -861,31 +882,19 @@ const CalendarView = ({
   const navigate = (direction) => {
     setOpenPopoverId(null);
     setOpenDayKey(null);
-    setCurrentDate((prev) => {
-      const d = new Date(prev);
-      if (view === VIEWS.MONTH) {
-        d.setMonth(d.getMonth() + direction);
-      } else if (view === VIEWS.WEEK) {
-        d.setDate(d.getDate() + direction * 7);
-      } else {
-        d.setDate(d.getDate() + direction);
-      }
-      return d;
-    });
+    onNavigate(direction);
   };
 
   const goToToday = () => {
     setOpenPopoverId(null);
     setOpenDayKey(null);
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    setCurrentDate(d);
+    onGoToToday();
   };
 
   const handleViewChange = (nextView) => {
     setOpenPopoverId(null);
     setOpenDayKey(null);
-    setView(nextView);
+    onViewChange(nextView);
   };
 
   const handleEdit = (session) => {
@@ -945,7 +954,10 @@ const CalendarView = ({
               {v.charAt(0).toUpperCase() + v.slice(1)}
             </Button>
           ))}
-          <span style={{ width: 1, height: 24, background: '#dee2e6', margin: '0 4px' }} />
+          <span style={{
+            width: 1, height: 24, background: '#dee2e6', margin: '0 4px',
+          }}
+          />
           <Button
             variant="success"
             size="sm"
@@ -957,8 +969,9 @@ const CalendarView = ({
         </div>
       </div>
 
-      {/* ── Active view ── */}
-      {view === VIEWS.MONTH && (
+      {/* ── Active view — subtle opacity during navigation re-fetches ── */}
+      <div style={{ opacity: loading ? 0.6 : 1, transition: 'opacity 120ms ease-out' }}>
+        {view === VIEWS.MONTH && (
         <MonthGrid
           currentDate={currentDate}
           sessionMap={sessionMap}
@@ -969,8 +982,8 @@ const CalendarView = ({
           openDayKey={openDayKey}
           setOpenDayKey={setOpenDayKey}
         />
-      )}
-      {view === VIEWS.WEEK && (
+        )}
+        {view === VIEWS.WEEK && (
         <WeekGrid
           currentDate={currentDate}
           sessionMap={sessionMap}
@@ -979,8 +992,8 @@ const CalendarView = ({
           openPopoverId={openPopoverId}
           setOpenPopoverId={setOpenPopoverId}
         />
-      )}
-      {view === VIEWS.DAY && (
+        )}
+        {view === VIEWS.DAY && (
         <DayView
           currentDate={currentDate}
           sessionMap={sessionMap}
@@ -989,7 +1002,8 @@ const CalendarView = ({
           openPopoverId={openPopoverId}
           setOpenPopoverId={setOpenPopoverId}
         />
-      )}
+        )}
+      </div>
 
     </div>
   );
