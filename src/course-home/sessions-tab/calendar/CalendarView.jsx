@@ -142,8 +142,25 @@ const SessionPopover = ({
   };
 
   const popover = (
-    <Popover id={`session-popover-${session.id}`} style={{ maxWidth: 320 }}>
-      <Popover.Title as="h5" style={{ fontSize: 14, margin: 0 }}>
+    <Popover
+      id={`session-popover-${session.id}`}
+      style={{
+        maxWidth: 320,
+        boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+        border: '1px solid #adb5bd',
+        borderRadius: 6,
+      }}
+    >
+      <Popover.Title
+        as="h5"
+        style={{
+          fontSize: 14,
+          margin: 0,
+          background: '#e7f1ff',
+          borderBottom: '1px solid #c5d9f2',
+          padding: '8px 12px',
+        }}
+      >
         {session.title}
       </Popover.Title>
       <Popover.Content style={{ fontSize: 13 }}>
@@ -221,8 +238,26 @@ const DayPopover = ({
   };
 
   const popover = (
-    <Popover id={`day-popover-${toDateKey(date)}`} style={{ maxWidth: 380, minWidth: 260 }}>
-      <Popover.Title as="h5" style={{ fontSize: 13, margin: 0 }}>
+    <Popover
+      id={`day-popover-${toDateKey(date)}`}
+      style={{
+        maxWidth: 380,
+        minWidth: 260,
+        boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+        border: '1px solid #adb5bd',
+        borderRadius: 6,
+      }}
+    >
+      <Popover.Title
+        as="h5"
+        style={{
+          fontSize: 13,
+          margin: 0,
+          background: '#e7f1ff',
+          borderBottom: '1px solid #c5d9f2',
+          padding: '8px 12px',
+        }}
+      >
         {dateLabel}
         <span className="text-muted ml-1" style={{ fontWeight: 400 }}>
           ({sessions.length} session{sessions.length !== 1 ? 's' : ''})
@@ -906,6 +941,7 @@ const CalendarView = ({
           <span style={{ width: 1, height: 24, background: '#dee2e6', margin: '0 4px' }} />
           <Button
             variant="success"
+            size="sm"
             iconBefore={Add}
             onClick={handleScheduleNew}
           >
