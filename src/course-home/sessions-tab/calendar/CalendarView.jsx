@@ -3,15 +3,13 @@ import {
   Button,
   IconButton,
   Badge,
-  Card,
-  StandardModal,
   OverlayTrigger,
   Popover,
 } from '@openedx/paragon';
 import {
   ChevronLeft, ChevronRight, Launch, Add, EditOutline, DeleteOutline,
 } from '@openedx/paragon/icons';
-import { bucketSessionsByDay, formatDateTime, getStatusVariant } from '../utils';
+import { bucketSessionsByDay, getStatusVariant } from '../utils';
 import { SESSION_STATUS_LABELS } from '../constants';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -193,33 +191,152 @@ const SessionPopover = ({
   );
 };
 
+// ─── DayPopover (Month view — shows all sessions for a day) ──────────────────
+// Anchored to the cell. Each session row has inline Edit / Delete / Join
+// buttons — no nested SessionPopover needed.
+
+const DayPopover = ({
+  date, sessions, children, isOpen, onOpenChange, onEdit, onDelete,
+}) => {
+  const dateLabel = date.toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+  });
+
+  const handleEdit = (e, session) => {
+    e.stopPropagation();
+    onOpenChange(false);
+    onEdit(session);
+  };
+
+  const handleDelete = (e, session) => {
+    e.stopPropagation();
+    onOpenChange(false);
+    onDelete(session);
+  };
+
+  const handleJoin = (e, session) => {
+    e.stopPropagation();
+    onOpenChange(false);
+    window.open(session.meeting_join_url, '_blank', 'noopener,noreferrer');
+  };
+
+  const popover = (
+    <Popover id={`day-popover-${toDateKey(date)}`} style={{ maxWidth: 380, minWidth: 260 }}>
+      <Popover.Title as="h5" style={{ fontSize: 13, margin: 0 }}>
+        {dateLabel}
+        <span className="text-muted ml-1" style={{ fontWeight: 400 }}>
+          ({sessions.length} session{sessions.length !== 1 ? 's' : ''})
+        </span>
+      </Popover.Title>
+      <Popover.Content style={{ fontSize: 13, maxHeight: 360, overflowY: 'auto', padding: 8 }}>
+        {sessions.map((session) => (
+          <div
+            key={session.id}
+            className="d-flex align-items-start"
+            style={{ gap: 8, padding: '8px 4px', borderBottom: '1px solid #f0f0f0' }}
+          >
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: statusColors[session.status] || '#6c757d',
+                marginTop: 6,
+                flexShrink: 0,
+              }}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 600 }}>
+                {session.title}
+              </div>
+              {session.course_name && (
+                <div className="text-muted" style={{ fontSize: 12 }}>{session.course_name}</div>
+              )}
+              <div style={{ fontSize: 12, color: '#6c757d' }}>{formatTimeRange(session)}</div>
+              <div className="mt-1 d-flex" style={{ gap: 4, flexWrap: 'wrap' }}>
+                <Button
+                  variant="tertiary"
+                  size="sm"
+                  iconBefore={EditOutline}
+                  onClick={(e) => handleEdit(e, session)}
+                >
+                  Edit
+                </Button>
+                <Button
+                  variant="tertiary"
+                  size="sm"
+                  iconBefore={DeleteOutline}
+                  style={{ color: '#dc3545' }}
+                  onClick={(e) => handleDelete(e, session)}
+                >
+                  Delete
+                </Button>
+                {session.meeting_join_url && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    iconAfter={Launch}
+                    onClick={(e) => handleJoin(e, session)}
+                  >
+                    Join
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </Popover.Content>
+    </Popover>
+  );
+
+  return (
+    <OverlayTrigger
+      show={isOpen}
+      onToggle={(next) => onOpenChange(next)}
+      trigger="click"
+      placement="auto"
+      rootClose
+      overlay={popover}
+    >
+      {children}
+    </OverlayTrigger>
+  );
+};
+
 // ─── DayCell (Month view only) ────────────────────────────────────────────────
 
 const MAX_CHIPS = 2;
 
 const DayCell = ({
-  date, sessions = [], onClick, onEditSession, onDeleteSession,
+  date, sessions = [], onEditSession, onDeleteSession,
   openPopoverId, setOpenPopoverId,
+  openDayKey, setOpenDayKey,
   isOutsideMonth = false, cellMinHeight = 110,
 }) => {
+  const dateKey = toDateKey(date);
   const today = toDateKey(new Date());
-  const isToday = toDateKey(date) === today;
+  const isToday = dateKey === today;
   const isWeekend = isWeekendDay(date);
   const visible = sessions.slice(0, MAX_CHIPS);
   const overflow = sessions.length - MAX_CHIPS;
-  const handleCellKey = (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onClick(date, sessions);
-    }
-  };
+  const hasSessions = sessions.length > 0;
+  const isDayOpen = openDayKey === dateKey;
 
-  return (
+  const setDayOpen = (next) => setOpenDayKey((curr) => {
+    if (next) { return dateKey; }
+    return curr === dateKey ? null : curr;
+  });
+
+  const cellContent = (
     <div
-      role="button"
-      tabIndex={0}
-      onClick={() => onClick(date, sessions)}
-      onKeyDown={handleCellKey}
+      role={hasSessions ? 'button' : undefined}
+      tabIndex={hasSessions ? 0 : undefined}
+      onKeyDown={hasSessions ? (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          setDayOpen(!isDayOpen);
+        }
+      } : undefined}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -229,7 +346,7 @@ const DayCell = ({
         borderRadius: 4,
         padding: '4px 6px',
         background: getCellBackground(isToday, isWeekend),
-        cursor: 'pointer',
+        cursor: hasSessions ? 'pointer' : 'default',
         textAlign: 'left',
         opacity: isOutsideMonth ? 0.4 : 1,
         width: '100%',
@@ -256,7 +373,7 @@ const DayCell = ({
         {date.getDate()}
       </span>
 
-      {/* Session chips — each individually clickable, opens popover */}
+      {/* Session chips — each individually clickable, opens session popover */}
       {visible.map((session) => (
         <SessionPopover
           key={session.id}
@@ -264,8 +381,6 @@ const DayCell = ({
           isOpen={openPopoverId === session.id}
           onOpenChange={(next) => setOpenPopoverId((curr) => {
             if (next) { return session.id; }
-            // Only clear if *this* popover is the one currently open — guards
-            // against a stale rootClose clobbering a sibling that just opened.
             return curr === session.id ? null : curr;
           })}
           onEdit={onEditSession}
@@ -273,7 +388,7 @@ const DayCell = ({
         >
           <button
             type="button"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); setOpenDayKey(null); }}
             onKeyDown={(e) => e.stopPropagation()}
             title={session.title}
             style={{
@@ -298,21 +413,51 @@ const DayCell = ({
         </SessionPopover>
       ))}
 
-      {/* Overflow badge */}
+      {/* Overflow — clickable, opens the day popover */}
       {overflow > 0 && (
-        <span style={{ fontSize: 11, color: '#6c757d', marginTop: 'auto' }}>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setDayOpen(true); }}
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            fontSize: 11,
+            color: '#0d6efd',
+            textDecoration: 'underline',
+            cursor: 'pointer',
+            textAlign: 'left',
+            marginTop: 'auto',
+          }}
+        >
           +{overflow} more
-        </span>
+        </button>
       )}
     </div>
+  );
+
+  if (!hasSessions) { return cellContent; }
+
+  return (
+    <DayPopover
+      date={date}
+      sessions={sessions}
+      isOpen={isDayOpen}
+      onOpenChange={setDayOpen}
+      onEdit={onEditSession}
+      onDelete={onDeleteSession}
+    >
+      {cellContent}
+    </DayPopover>
   );
 };
 
 // ─── MonthGrid ────────────────────────────────────────────────────────────────
 
 const MonthGrid = ({
-  currentDate, sessionMap, onDayClick, onEditSession, onDeleteSession,
+  currentDate, sessionMap, onEditSession, onDeleteSession,
   openPopoverId, setOpenPopoverId,
+  openDayKey, setOpenDayKey,
 }) => {
   const days = getMonthGridDays(currentDate);
   const currentMonth = currentDate.getMonth();
@@ -357,11 +502,12 @@ const MonthGrid = ({
             key={toDateKey(day)}
             date={day}
             sessions={sessionMap.get(toDateKey(day)) || []}
-            onClick={onDayClick}
             onEditSession={onEditSession}
             onDeleteSession={onDeleteSession}
             openPopoverId={openPopoverId}
             setOpenPopoverId={setOpenPopoverId}
+            openDayKey={openDayKey}
+            setOpenDayKey={setOpenDayKey}
             isOutsideMonth={day.getMonth() !== currentMonth}
             cellMinHeight={110}
           />
@@ -650,64 +796,6 @@ const DayView = ({
   />
 );
 
-// ─── SessionCard (used inside the day modal) ──────────────────────────────────
-
-const SessionCard = ({
-  session, onEdit, onDelete,
-}) => {
-  const statusLabel = SESSION_STATUS_LABELS[session.status] || session.status;
-  const badgeVariant = getStatusVariant(session.status);
-
-  return (
-    <Card className="mb-3">
-      <Card.Body style={{ padding: '1rem' }}>
-        <div className="d-flex justify-content-between align-items-start">
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <strong className="d-block">{session.title}</strong>
-            <small className="text-muted">{session.course_name}</small>
-            <div className="mt-1" style={{ fontSize: 13 }}>
-              {formatDateTime(session.scheduled_start_time)}
-              {session.scheduled_end_time && (
-                <> – {new Date(session.scheduled_end_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</>
-              )}
-            </div>
-          </div>
-          <div className="ml-3 d-flex flex-column align-items-end" style={{ flexShrink: 0, gap: 6 }}>
-            <Badge variant={badgeVariant}>{statusLabel}</Badge>
-            <div className="d-flex" style={{ gap: 4 }}>
-              <IconButton
-                src={EditOutline}
-                iconAs={EditOutline}
-                alt="Edit"
-                size="sm"
-                onClick={() => onEdit(session)}
-              />
-              <IconButton
-                src={DeleteOutline}
-                iconAs={DeleteOutline}
-                alt="Delete"
-                size="sm"
-                variant="danger"
-                onClick={() => onDelete(session)}
-              />
-              {session.meeting_join_url && (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  iconAfter={Launch}
-                  onClick={() => window.open(session.meeting_join_url, '_blank', 'noopener,noreferrer')}
-                >
-                  Join
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      </Card.Body>
-    </Card>
-  );
-};
-
 // ─── CalendarView ─────────────────────────────────────────────────────────────
 
 const CalendarView = ({
@@ -719,16 +807,18 @@ const CalendarView = ({
     d.setHours(0, 0, 0, 0);
     return d;
   });
-  const [selectedDay, setSelectedDay] = useState(null); // { date, sessions }
   // Only one popover open at a time; null = none. Chip clicks and outside
   // clicks flip this; Edit/Delete actions also reset it before bubbling up.
   const [openPopoverId, setOpenPopoverId] = useState(null);
+  // Day popover (Month view) — keyed by date string e.g. "2026-03-27"
+  const [openDayKey, setOpenDayKey] = useState(null);
 
   const sessionMap = bucketSessionsByDay(sessions);
 
   // ── Navigation ──
   const navigate = (direction) => {
     setOpenPopoverId(null);
+    setOpenDayKey(null);
     setCurrentDate((prev) => {
       const d = new Date(prev);
       if (view === VIEWS.MONTH) {
@@ -744,6 +834,7 @@ const CalendarView = ({
 
   const goToToday = () => {
     setOpenPopoverId(null);
+    setOpenDayKey(null);
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     setCurrentDate(d);
@@ -751,39 +842,27 @@ const CalendarView = ({
 
   const handleViewChange = (nextView) => {
     setOpenPopoverId(null);
+    setOpenDayKey(null);
     setView(nextView);
   };
 
-  // Month cell body click → day-detail modal (used for overflow / full-day browse)
-  const handleDayClick = (date, daySessions) => {
-    setOpenPopoverId(null);
-    setSelectedDay({ date, sessions: daySessions });
-  };
-
-  // Edit/Delete from either popover or day-modal: always close both surfaces
-  // before bubbling up, so the Schedule/confirm modal is the top-most view.
   const handleEdit = (session) => {
     setOpenPopoverId(null);
-    setSelectedDay(null);
+    setOpenDayKey(null);
     onEditSession(session);
   };
 
   const handleDelete = (session) => {
     setOpenPopoverId(null);
-    setSelectedDay(null);
+    setOpenDayKey(null);
     onDeleteSession(session);
   };
 
   const handleScheduleNew = () => {
     setOpenPopoverId(null);
+    setOpenDayKey(null);
     onScheduleNew();
   };
-
-  const modalTitle = selectedDay
-    ? selectedDay.date.toLocaleDateString('en-US', {
-      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-    })
-    : '';
 
   return (
     <div>
@@ -824,12 +903,11 @@ const CalendarView = ({
               {v.charAt(0).toUpperCase() + v.slice(1)}
             </Button>
           ))}
+          <span style={{ width: 1, height: 24, background: '#dee2e6', margin: '0 4px' }} />
           <Button
-            variant="primary"
-            size="sm"
+            variant="success"
             iconBefore={Add}
             onClick={handleScheduleNew}
-            className="ml-2"
           >
             New session
           </Button>
@@ -841,11 +919,12 @@ const CalendarView = ({
         <MonthGrid
           currentDate={currentDate}
           sessionMap={sessionMap}
-          onDayClick={handleDayClick}
           onEditSession={handleEdit}
           onDeleteSession={handleDelete}
           openPopoverId={openPopoverId}
           setOpenPopoverId={setOpenPopoverId}
+          openDayKey={openDayKey}
+          setOpenDayKey={setOpenDayKey}
         />
       )}
       {view === VIEWS.WEEK && (
@@ -869,30 +948,6 @@ const CalendarView = ({
         />
       )}
 
-      {/* ── Day modal (cell click / overflow) ── */}
-      {selectedDay && (
-        <StandardModal
-          isOpen
-          onClose={() => setSelectedDay(null)}
-          title={`Sessions — ${modalTitle}`}
-          size="lg"
-        >
-          {selectedDay.sessions.length === 0 ? (
-            <p className="text-muted text-center py-3">No sessions on this day.</p>
-          ) : (
-            <div className="pt-2">
-              {selectedDay.sessions.map((session) => (
-                <SessionCard
-                  key={session.id}
-                  session={session}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                />
-              ))}
-            </div>
-          )}
-        </StandardModal>
-      )}
     </div>
   );
 };
