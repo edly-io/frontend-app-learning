@@ -92,5 +92,5 @@ export const getCalendarSessions = async (startDate, endDate) => {
     end_date: endDate,
   });
   const { data } = await client.get(`${getBaseUrl()}/calendar-sessions/?${params}`);
-  return data;
+  return { sessions: data.results, userRole: data.user_role };
 };

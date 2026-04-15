@@ -48,8 +48,10 @@ const computeFetchWindow = (view, currentDate) => {
 
 const CalendarPage = () => {
   const [sessions, setSessions] = useState([]);
+  const [userRole, setUserRole] = useState('learner');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const canManageSessions = userRole === 'admin';
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Calendar navigation state — lifted here because it drives the fetch window.
@@ -79,9 +81,10 @@ const CalendarPage = () => {
     const fetchSessions = async () => {
       setLoading(true);
       try {
-        const data = await getCalendarSessions(start.toISOString(), end.toISOString());
+        const { sessions: data, userRole: role } = await getCalendarSessions(start.toISOString(), end.toISOString());
         if (!cancelled) {
           setSessions(data);
+          setUserRole(role || 'learner');
           setError('');
         }
       } catch (err) {
@@ -191,6 +194,7 @@ const CalendarPage = () => {
           onEditSession={handleEditSession}
           onDeleteSession={handleDeleteSession}
           loading={loading}
+          canManageSessions={canManageSessions}
         />
       </Container>
     );
@@ -204,18 +208,19 @@ const CalendarPage = () => {
       </main>
       <FooterSlot />
 
-      {/* Create / Edit modal — reuses existing ScheduleMeetingModal.
-          In create mode (modalSession === null) the user picks the course inside the modal. */}
-      <ScheduleMeetingModal
-        isOpen={modalSession !== undefined}
-        onClose={() => setModalSession(undefined)}
-        courseId={modalSession?.course_id || ''}
-        session={modalSession}
-        onSuccess={handleSessionSuccess}
-      />
+      {/* Create / Edit modal — only for admins */}
+      {canManageSessions && (
+        <ScheduleMeetingModal
+          isOpen={modalSession !== undefined}
+          onClose={() => setModalSession(undefined)}
+          courseId={modalSession?.course_id || ''}
+          session={modalSession}
+          onSuccess={handleSessionSuccess}
+        />
+      )}
 
-      {/* Delete confirmation */}
-      {sessionToDelete && (
+      {/* Delete confirmation — only for admins */}
+      {canManageSessions && sessionToDelete && (
         <StandardModal
           isOpen
           onClose={handleDeleteCancel}
