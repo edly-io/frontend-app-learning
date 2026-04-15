@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Button,
+  Icon,
   IconButton,
   Badge,
   OverlayTrigger,
@@ -161,7 +163,14 @@ const SessionPopover = ({
           padding: '8px 12px',
         }}
       >
-        {session.title}
+        <Link
+          to={`/course/${session.course_id}/sessions/${session.id}`}
+          className="text-primary d-inline-flex align-items-center"
+          style={{ gap: 4, textDecoration: 'none' }}
+        >
+          {session.title}
+          <Icon src={Launch} style={{ width: 14, height: 14 }} />
+        </Link>
       </Popover.Title>
       <Popover.Content style={{ fontSize: 13 }}>
         {session.course_name && (
@@ -294,7 +303,14 @@ const DayPopover = ({
             />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 600 }}>
-                {session.title}
+                <Link
+                  to={`/course/${session.course_id}/sessions/${session.id}`}
+                  className="text-primary d-inline-flex align-items-center"
+                  style={{ gap: 4, textDecoration: 'none' }}
+                >
+                  {session.title}
+                  <Icon src={Launch} style={{ width: 14, height: 14 }} />
+                </Link>
               </div>
               {session.course_name && (
                 <div className="text-muted" style={{ fontSize: 12 }}>{session.course_name}</div>

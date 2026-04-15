@@ -4,6 +4,8 @@ export const DECODE_ROUTES = {
   LIVE: '/course/:courseId/live',
   DATES: '/course/:courseId/dates',
   ATTENDANCE: '/course/:courseId/sessions',
+  ATTENDANCE_DETAIL: '/course/:courseId/sessions/:sessionId',
+  ATTENDANCE_V1: '/course/:courseId/sessions-v1',
   DISCUSSION: '/course/:courseId/discussion/:path/*',
   PROGRESS: [
     '/course/:courseId/progress/:targetUserId/',
