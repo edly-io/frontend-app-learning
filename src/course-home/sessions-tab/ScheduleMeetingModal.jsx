@@ -4,6 +4,13 @@ import { createSession, updateSession, fetchCourseRuns, fetchInstructors } from 
 import { toISOString, toDateTimeLocal, extractApiError } from './utils';
 import SearchableSelect from './SearchableSelect';
 
+// ─── Class options ────────────────────────────────────────────────────────────
+
+const CLASS_OPTIONS = [
+  'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
+  'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
+];
+
 // ─── Recurrence constants ─────────────────────────────────────────────────────
 
 const RECURRENCE_TYPES = [
@@ -119,6 +126,10 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
     scheduled_start_time: '',
     scheduled_end_time: '',
   });
+  // When off, the session is in-person/manual. Remote learners request personal
+  // Zoom links through the session-request approval flow instead. Field is
+  // captured on create only; backend makes it read-only on updates.
+  const [createZoomMeeting, setCreateZoomMeeting] = useState(false);
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurrenceType, setRecurrenceType] = useState('weekly');
   const [weeklyDays, setWeeklyDays] = useState([2]);
@@ -139,6 +150,7 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
   const [instructorOptions, setInstructorOptions] = useState([]);
   const [selectedCourseRun, setSelectedCourseRun] = useState(null);
   const [selectedInstructor, setSelectedInstructor] = useState(null);
+  const [selectedClass, setSelectedClass] = useState('');
   const [courseRunsLoading, setCourseRunsLoading] = useState(false);
   const [instructorsLoading, setInstructorsLoading] = useState(false);
 
@@ -206,6 +218,7 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
       setStartTimeInput(startTime);
       setEndDateInput(endDateValue);
       setEndTimeInput(endTime);
+      setCreateZoomMeeting(Boolean(session.create_zoom_meeting));
       const recurrence = session.recurrence || {};
       const hasRecurrence = session.is_recurring || Object.keys(recurrence).length > 0;
       setIsRecurring(hasRecurrence);
@@ -254,6 +267,7 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
       setStartTimeInput('');
       setEndDateInput('');
       setEndTimeInput('');
+      setCreateZoomMeeting(false);
       setIsRecurring(false);
       setRecurrenceType('weekly');
       setWeeklyDays([2]);
@@ -266,6 +280,7 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
       setEndDate('');
       setSelectedCourseRun(null);
       setSelectedInstructor(null);
+      setSelectedClass('');
       setInstructorOptions([]);
     }
   }, [session, isOpen]);
@@ -341,6 +356,11 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
     }
     if (!selectedInstructor) {
       setError('Instructor is required');
+      setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+      return false;
+    }
+    if (!selectedClass) {
+      setError('Class is required');
       setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
       return false;
     }
@@ -453,9 +473,9 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
         scheduled_end_time: toISOString(formData.scheduled_end_time),
         timezone: timezoneName,
         is_recurring: isRecurring,
-        // Platform is always 'zoom' and is_attendance_mandatory is always true (backend sets these)
         ...(selectedInstructor && { instructor_email: selectedInstructor.email }),
       };
+      sessionData.create_zoom_meeting = createZoomMeeting;
       if (recurrence) {
         sessionData.recurrence = recurrence;
       }
@@ -561,6 +581,21 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
         />
 
         <Form.Group className="mb-3">
+          <Form.Label>Class *</Form.Label>
+          <Form.Control
+            as="select"
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+            required
+          >
+            <option value="">Select a class...</option>
+            {CLASS_OPTIONS.map((cls) => (
+              <option key={cls} value={cls}>{cls}</option>
+            ))}
+          </Form.Control>
+        </Form.Group>
+
+        <Form.Group className="mb-3">
           <Form.Label>Description</Form.Label>
           <Form.Control
             as="textarea"
@@ -622,13 +657,33 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
           </div>
         </Form.Group>
 
+        <Form.Group className="mb-2">
+          <Form.Checkbox
+            id="create-zoom-meeting-toggle"
+            name="create_zoom_meeting"
+            checked={createZoomMeeting}
+            onChange={(e) => {
+              const next = e.target.checked;
+              setCreateZoomMeeting(next);
+            }}
+            disabled={Boolean(session?.meeting_join_url)}
+          >
+            Create Zoom meeting for this session
+          </Form.Checkbox>
+          <Form.Text className="text-muted">
+            Only create a Zoom meeting if you plan to use it for this session.
+            Remote learners get individual Zoom links when you approve their
+            session requests.
+          </Form.Text>
+        </Form.Group>
+
         <Form.Group className="mb-0">
           <Form.Checkbox
             id="recurring-meeting-toggle"
             name="is_recurring"
             checked={isRecurring}
             onChange={(e) => setIsRecurring(e.target.checked)}
-            disabled={session?.is_recurring}
+            disabled={Boolean(session?.is_recurring)}
           >
             Recurring meeting
           </Form.Checkbox>

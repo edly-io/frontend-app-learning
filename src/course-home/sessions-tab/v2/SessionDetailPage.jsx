@@ -13,7 +13,11 @@ import {
 } from '@openedx/paragon';
 import { getSession } from '../api';
 import { formatDateTime, getStatusVariant, extractApiError } from '../utils';
-import { SESSION_STATUS_LABELS } from '../constants';
+import {
+  SESSION_STATUS_LABELS,
+  SESSION_PLATFORM,
+  SESSION_PLATFORM_LABELS,
+} from '../constants';
 
 const SessionDetailPage = () => {
   const { courseId, sessionId } = useParams();
@@ -95,7 +99,11 @@ const SessionDetailPage = () => {
             </Col>
             <Col md={3}>
               <strong>Platform</strong>
-              <div className="text-capitalize">{session?.platform}</div>
+              <div>
+                {session?.platform === SESSION_PLATFORM.ZOOM && session?.meeting_join_url
+                  ? SESSION_PLATFORM_LABELS[SESSION_PLATFORM.ZOOM]
+                  : SESSION_PLATFORM_LABELS[SESSION_PLATFORM.MANUAL]}
+              </div>
             </Col>
             <Col md={3}>
               <strong>Status</strong>

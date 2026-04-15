@@ -5,9 +5,11 @@ import {
   Container, Spinner, Alert, Toast, StandardModal, Button,
 } from '@openedx/paragon';
 import { FooterSlot } from '@edx/frontend-component-footer';
-import { getCalendarSessions, deleteSession } from '../api';
+import { getCalendarSessions, deleteSession, getMySessionRequests } from '../api';
 import { extractApiError } from '../utils';
+import { USER_ROLE } from '../constants';
 import ScheduleMeetingModal from '../ScheduleMeetingModal';
+import SessionRequestModal from '../SessionRequestModal';
 import HeaderSlot from '../../../plugin-slots/HeaderSlot';
 import CalendarView, { getMonthGridDays, getWeekDays } from './CalendarView';
 
@@ -48,11 +50,18 @@ const computeFetchWindow = (view, currentDate) => {
 
 const CalendarPage = () => {
   const [sessions, setSessions] = useState([]);
-  const [userRole, setUserRole] = useState('learner');
+  const [userRole, setUserRole] = useState(USER_ROLE.LEARNER);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const canManageSessions = userRole === 'admin';
+  const canManageSessions = userRole === USER_ROLE.ADMIN;
+  const isLearner = userRole === USER_ROLE.LEARNER;
+  const isHost = userRole === USER_ROLE.ADMIN || userRole === USER_ROLE.INSTRUCTOR;
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Learner-only: map of sessionId → SessionRequest for the visible window.
+  // Drives "Request"/"Pending"/"Approved" state inside session popovers.
+  const [myRequests, setMyRequests] = useState(() => new Map());
+  const [requestModalSession, setRequestModalSession] = useState(null);
 
   // Calendar navigation state — lifted here because it drives the fetch window.
   const [view, setView] = useState(VIEWS.MONTH);
@@ -82,10 +91,24 @@ const CalendarPage = () => {
       setLoading(true);
       try {
         const { sessions: data, userRole: role } = await getCalendarSessions(start.toISOString(), end.toISOString());
-        if (!cancelled) {
-          setSessions(data);
-          setUserRole(role || 'learner');
-          setError('');
+        if (cancelled) { return; }
+        setSessions(data);
+        const resolvedRole = role || USER_ROLE.LEARNER;
+        setUserRole(resolvedRole);
+        setError('');
+
+        // Hydrate learner's request state for the visible window so popovers
+        // render the correct CTA (Request / Pending / Approved + Join).
+        if (resolvedRole === USER_ROLE.LEARNER) {
+          const requests = await getMySessionRequests({
+            startDate: start.toISOString(),
+            endDate: end.toISOString(),
+          });
+          if (cancelled) { return; }
+          const list = Array.isArray(requests) ? requests : requests.results || [];
+          setMyRequests(new Map(list.map((r) => [r.session, r])));
+        } else {
+          setMyRequests(new Map());
         }
       } catch (err) {
         if (!cancelled) {
@@ -160,6 +183,22 @@ const CalendarPage = () => {
     setView(nextView);
   }, []);
 
+  // Learner request flow — open modal from a session chip / popover.
+  const handleRequestSession = useCallback((session) => {
+    setRequestModalSession(session);
+  }, []);
+
+  const handleRequestSuccess = (created) => {
+    // Optimistically merge the new request so the popover flips to "Pending"
+    // without waiting for a full calendar refetch.
+    setMyRequests((prev) => {
+      const next = new Map(prev);
+      next.set(created.session, created);
+      return next;
+    });
+    showSuccess('Request submitted.');
+  };
+
   const renderContent = () => {
     // Initial load — show full-page spinner. Subsequent navigations use the
     // inline loading opacity inside CalendarView instead so the grid stays visible.
@@ -195,6 +234,10 @@ const CalendarPage = () => {
           onDeleteSession={handleDeleteSession}
           loading={loading}
           canManageSessions={canManageSessions}
+          isLearner={isLearner}
+          isHost={isHost}
+          studentRequestMap={myRequests}
+          onRequestSession={handleRequestSession}
         />
       </Container>
     );
@@ -216,6 +259,17 @@ const CalendarPage = () => {
           courseId={modalSession?.course_id || ''}
           session={modalSession}
           onSuccess={handleSessionSuccess}
+        />
+      )}
+
+      {/* Learner request submission */}
+      {isLearner && (
+        <SessionRequestModal
+          isOpen={Boolean(requestModalSession)}
+          onClose={() => setRequestModalSession(null)}
+          session={requestModalSession}
+          sessionHasZoom={!!(requestModalSession?.meeting_join_url)}
+          onSuccess={handleRequestSuccess}
         />
       )}
 
