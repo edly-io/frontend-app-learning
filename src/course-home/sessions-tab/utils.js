@@ -59,3 +59,18 @@ export const extractApiError = (err, fallback = 'An unexpected error occurred') 
   || err.message
   || fallback
 );
+
+/**
+ * Group an array of sessions into a Map keyed by local date string (YYYY-MM-DD).
+ * Each session appears under its start day in the user's local timezone.
+ */
+export const bucketSessionsByDay = (sessions) => {
+  const map = new Map();
+  sessions.forEach((session) => {
+    if (!session.scheduled_start_time) return;
+    const key = new Date(session.scheduled_start_time).toLocaleDateString('en-CA'); // YYYY-MM-DD
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(session);
+  });
+  return map;
+};

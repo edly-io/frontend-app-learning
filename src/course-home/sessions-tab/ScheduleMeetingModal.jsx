@@ -1,7 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { StandardModal, Button, Form, Spinner, Alert, OverlayTrigger, Tooltip } from '@openedx/paragon';
-import { createSession, updateSession } from './api';
+import { createSession, updateSession, fetchCourseRuns, fetchInstructors } from './api';
 import { toISOString, toDateTimeLocal, extractApiError } from './utils';
+import SearchableSelect from './SearchableSelect';
+
+// ─── Class options ────────────────────────────────────────────────────────────
+
+const CLASS_OPTIONS = [
+  'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
+  'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
+];
 
 // ─── Recurrence constants ─────────────────────────────────────────────────────
 
@@ -118,6 +126,10 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
     scheduled_start_time: '',
     scheduled_end_time: '',
   });
+  // When off, the session is in-person/manual. Remote learners request personal
+  // Zoom links through the session-request approval flow instead. Field is
+  // captured on create only; backend makes it read-only on updates.
+  const [createZoomMeeting, setCreateZoomMeeting] = useState(false);
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurrenceType, setRecurrenceType] = useState('weekly');
   const [weeklyDays, setWeeklyDays] = useState([2]);
@@ -132,6 +144,62 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
   const [startTimeInput, setStartTimeInput] = useState('');
   const [endDateInput, setEndDateInput] = useState('');
   const [endTimeInput, setEndTimeInput] = useState('');
+
+  // ─── Course run & instructor ───────────────────────────────────────────────
+  const [courseRunOptions, setCourseRunOptions] = useState([]);
+  const [instructorOptions, setInstructorOptions] = useState([]);
+  const [selectedCourseRun, setSelectedCourseRun] = useState(null);
+  const [selectedInstructor, setSelectedInstructor] = useState(null);
+  const [selectedClass, setSelectedClass] = useState('');
+  const [courseRunsLoading, setCourseRunsLoading] = useState(false);
+  const [instructorsLoading, setInstructorsLoading] = useState(false);
+
+  // Fetch the full course run list once each time the modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+    setCourseRunsLoading(true);
+    fetchCourseRuns()
+      .then((data) => setCourseRunOptions(data.map((r) => ({ value: r.id, label: r.title }))))
+      .catch(() => {}) // silently fail — modal remains usable
+      .finally(() => setCourseRunsLoading(false));
+  }, [isOpen]);
+
+  // Pre-fill course run once options are loaded:
+  //   edit mode  → match session.course_id
+  //   create mode → match the courseId prop (course-scoped sessions tab)
+  useEffect(() => {
+    if (courseRunOptions.length === 0) return;
+    const targetId = session ? String(session.course_id) : courseId;
+    if (!targetId) return;
+    const match = courseRunOptions.find((r) => r.value === targetId);
+    if (match) setSelectedCourseRun(match);
+  }, [courseRunOptions, session, courseId]);
+
+  // Fetch instructors whenever the selected course run changes;
+  // also clear the instructor selection so it stays consistent with the new course
+  const selectedCourseRunId = selectedCourseRun?.value ?? null;
+  useEffect(() => {
+    if (!selectedCourseRunId) {
+      setInstructorOptions([]);
+      setSelectedInstructor(null);
+      return;
+    }
+    setInstructorsLoading(true);
+    setSelectedInstructor(null);
+    fetchInstructors(selectedCourseRunId)
+      .then((data) => setInstructorOptions(
+        data.map((i) => ({ value: i.user_id, label: i.name, email: i.email })),
+      ))
+      .catch(() => {})
+      .finally(() => setInstructorsLoading(false));
+  }, [selectedCourseRunId]);
+
+  // Pre-fill instructor once options are loaded (edit mode only)
+  useEffect(() => {
+    if (!session || instructorOptions.length === 0) return;
+    const match = instructorOptions.find((i) => i.email === session.instructor_email);
+    if (match) setSelectedInstructor(match);
+  }, [instructorOptions, session]);
 
   // Pre-fill form when editing
   useEffect(() => {
@@ -150,6 +218,7 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
       setStartTimeInput(startTime);
       setEndDateInput(endDateValue);
       setEndTimeInput(endTime);
+      setCreateZoomMeeting(Boolean(session.create_zoom_meeting));
       const recurrence = session.recurrence || {};
       const hasRecurrence = session.is_recurring || Object.keys(recurrence).length > 0;
       setIsRecurring(hasRecurrence);
@@ -198,6 +267,7 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
       setStartTimeInput('');
       setEndDateInput('');
       setEndTimeInput('');
+      setCreateZoomMeeting(false);
       setIsRecurring(false);
       setRecurrenceType('weekly');
       setWeeklyDays([2]);
@@ -208,6 +278,10 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
       setEndType('count');
       setEndCount(10);
       setEndDate('');
+      setSelectedCourseRun(null);
+      setSelectedInstructor(null);
+      setSelectedClass('');
+      setInstructorOptions([]);
     }
   }, [session, isOpen]);
 
@@ -272,6 +346,21 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
   const validateForm = () => {
     if (!formData.title.trim()) {
       setError('Title is required');
+      setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+      return false;
+    }
+    if (!selectedCourseRun) {
+      setError('Course is required');
+      setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+      return false;
+    }
+    if (!selectedInstructor) {
+      setError('Instructor is required');
+      setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+      return false;
+    }
+    if (!selectedClass) {
+      setError('Class is required');
       setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
       return false;
     }
@@ -375,6 +464,8 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
 
     try {
       const recurrence = buildRecurrence();
+      // Use the explicitly selected course run; fall back to the prop for backwards-compat
+      const effectiveCourseId = selectedCourseRun?.value || courseId;
       const sessionData = {
         title: formData.title,
         description: formData.description,
@@ -382,8 +473,9 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
         scheduled_end_time: toISOString(formData.scheduled_end_time),
         timezone: timezoneName,
         is_recurring: isRecurring,
-        // Platform is always 'zoom' and is_attendance_mandatory is always true (backend sets these)
+        ...(selectedInstructor && { instructor_email: selectedInstructor.email }),
       };
+      sessionData.create_zoom_meeting = createZoomMeeting;
       if (recurrence) {
         sessionData.recurrence = recurrence;
       }
@@ -391,10 +483,10 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
       let result;
       if (session) {
         // Update existing session
-        result = await updateSession(courseId, session.id, sessionData);
+        result = await updateSession(effectiveCourseId, session.id, sessionData);
       } else {
         // Create new session
-        result = await createSession(courseId, sessionData);
+        result = await createSession(effectiveCourseId, sessionData);
       }
       
       onSuccess(result);
@@ -465,6 +557,44 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
           />
         </Form.Group>
 
+        <SearchableSelect
+          id="session-course-run"
+          label="Course"
+          options={courseRunOptions}
+          value={selectedCourseRun}
+          onChange={setSelectedCourseRun}
+          placeholder="Search by course title..."
+          loading={courseRunsLoading}
+          required
+        />
+
+        <SearchableSelect
+          id="session-instructor"
+          label="Instructor"
+          options={instructorOptions}
+          value={selectedInstructor}
+          onChange={setSelectedInstructor}
+          placeholder={selectedCourseRun ? 'Search by name...' : 'Select a course first'}
+          loading={instructorsLoading}
+          disabled={!selectedCourseRun}
+          required
+        />
+
+        <Form.Group className="mb-3">
+          <Form.Label>Class *</Form.Label>
+          <Form.Control
+            as="select"
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+            required
+          >
+            <option value="">Select a class...</option>
+            {CLASS_OPTIONS.map((cls) => (
+              <option key={cls} value={cls}>{cls}</option>
+            ))}
+          </Form.Control>
+        </Form.Group>
+
         <Form.Group className="mb-3">
           <Form.Label>Description</Form.Label>
           <Form.Control
@@ -527,13 +657,33 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
           </div>
         </Form.Group>
 
+        <Form.Group className="mb-2">
+          <Form.Checkbox
+            id="create-zoom-meeting-toggle"
+            name="create_zoom_meeting"
+            checked={createZoomMeeting}
+            onChange={(e) => {
+              const next = e.target.checked;
+              setCreateZoomMeeting(next);
+            }}
+            disabled={Boolean(session?.meeting_join_url)}
+          >
+            Create Zoom meeting for this session
+          </Form.Checkbox>
+          <Form.Text className="text-muted">
+            Only create a Zoom meeting if you plan to use it for this session.
+            Remote learners get individual Zoom links when you approve their
+            session requests.
+          </Form.Text>
+        </Form.Group>
+
         <Form.Group className="mb-0">
           <Form.Checkbox
             id="recurring-meeting-toggle"
             name="is_recurring"
             checked={isRecurring}
             onChange={(e) => setIsRecurring(e.target.checked)}
-            disabled={session?.is_recurring}
+            disabled={Boolean(session?.is_recurring)}
           >
             Recurring meeting
           </Form.Checkbox>

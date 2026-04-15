@@ -29,7 +29,7 @@ export const deleteSession = async (courseId, sessionId) => {
 
 export const getSession = async (courseId, sessionId) => {
   const client = getAuthenticatedHttpClient();
-  const { data} = await client.get(`${getBaseUrl()}/courses/${courseId}/sessions/${sessionId}/`);
+  const { data } = await client.get(`${getBaseUrl()}/courses/${courseId}/sessions/${sessionId}/`);
   return data;
 };
 
@@ -43,5 +43,131 @@ export const getAttendanceRecords = async (filters = {}) => {
 export const updateAttendanceRecord = async (recordId, recordData) => {
   const client = getAuthenticatedHttpClient();
   const { data } = await client.patch(`${getBaseUrl()}/records/${recordId}/`, recordData);
+  return data;
+};
+
+// ─── Course Run & Instructor lookup APIs ──────────────────────────────────────
+// Used to populate the searchable autocomplete fields in ScheduleMeetingModal.
+
+/**
+ * Fetch all course runs accessible to the requesting instructor.
+ * Searched by `title` in the frontend autocomplete.
+ *
+ * GET /fbr/api/attendance/v1/course-runs/
+ * Returns: [{ id: "course-v1:Org+Course+Run", title: "..." }, ...]
+ */
+export const fetchCourseRuns = async () => {
+  const client = getAuthenticatedHttpClient();
+  const { data } = await client.get(`${getBaseUrl()}/course-runs/`);
+  return data;
+};
+
+/**
+ * Fetch instructors / course-team members for a specific course run.
+ * Called after the user selects a course run in ScheduleMeetingModal.
+ * Searched by `name` in the frontend autocomplete.
+ *
+ * GET /fbr/api/attendance/v1/courses/{courseId}/instructors/
+ * Returns: [{ user_id, email, name }, ...]
+ *
+ * @param {string} courseId - Course key string, e.g. "course-v1:Org+Course+Run"
+ */
+export const fetchInstructors = async (courseId) => {
+  const client = getAuthenticatedHttpClient();
+  const { data } = await client.get(`${getBaseUrl()}/courses/${courseId}/instructors/`);
+  return data;
+};
+
+// ─── Calendar API ─────────────────────────────────────────────────────────────
+//
+// Returns sessions within a date window for the calendar UI. Visibility is
+// role-based on the backend (admins see all; instructors see their courses;
+// learners see enrolled courses). The window is required and must be
+// <= 45 days — the calendar re-fetches on navigation, so one month/week/day
+// at a time is all we ever load.
+export const getCalendarSessions = async (startDate, endDate) => {
+  const client = getAuthenticatedHttpClient();
+  const params = new URLSearchParams({
+    start_date: startDate,
+    end_date: endDate,
+  });
+  const { data } = await client.get(`${getBaseUrl()}/calendar-sessions/?${params}`);
+  return { sessions: data.results, userRole: data.user_role };
+};
+
+// ─── Session Requests ─────────────────────────────────────────────────────────
+// Learner submits; admin/instructor reviews (approve/reject). On approval of a
+// remote_zoom request the backend creates a per-learner Zoom meeting and
+// returns the join URL on the request object. Leave approvals mark the
+// learner's attendance as absent+overridden.
+
+/**
+ * Learner submits a session request.
+ *
+ * POST /fbr/api/attendance/v1/session-requests/
+ * Body: { session: sessionId, request_type: 'remote_zoom'|'leave', reason: string }
+ * Returns: the created SessionRequest (including server-populated fields).
+ */
+export const createSessionRequest = async ({ session, requestType, reason }) => {
+  const client = getAuthenticatedHttpClient();
+  const { data } = await client.post(`${getBaseUrl()}/session-requests/`, {
+    session,
+    request_type: requestType,
+    reason,
+  });
+  return data;
+};
+
+/**
+ * List session requests visible to the authenticated reviewer.
+ * Admin sees all; instructor sees requests for their courses; learner sees none
+ * (learners must use `getMySessionRequests` instead).
+ *
+ * GET /fbr/api/attendance/v1/session-requests/
+ */
+export const getSessionRequests = async ({ courseId, status, sessionId } = {}) => {
+  const client = getAuthenticatedHttpClient();
+  const params = new URLSearchParams();
+  if (courseId) { params.set('course_id', courseId); }
+  if (status) { params.set('status', status); }
+  if (sessionId) { params.set('session_id', sessionId); }
+  const qs = params.toString();
+  const url = `${getBaseUrl()}/session-requests/${qs ? `?${qs}` : ''}`;
+  const { data } = await client.get(url);
+  return data;
+};
+
+/**
+ * List the authenticated learner's own requests, optionally scoped to a
+ * `session.scheduled_start_time` window — matches calendar fetch windows so
+ * the learner's calendar can hydrate request state for the visible range.
+ *
+ * GET /fbr/api/attendance/v1/session-requests/me/
+ */
+export const getMySessionRequests = async ({ startDate, endDate } = {}) => {
+  const client = getAuthenticatedHttpClient();
+  const params = new URLSearchParams();
+  if (startDate) { params.set('start_date', startDate); }
+  if (endDate) { params.set('end_date', endDate); }
+  const qs = params.toString();
+  const url = `${getBaseUrl()}/session-requests/me/${qs ? `?${qs}` : ''}`;
+  const { data } = await client.get(url);
+  return data;
+};
+
+/**
+ * Approve or reject a pending request.
+ *
+ * PATCH /fbr/api/attendance/v1/session-requests/{requestId}/review/
+ * Body: { status: 'approved'|'rejected', reviewer_note?: string }
+ * Returns: the updated SessionRequest (meeting_join_url populated on approved
+ *          remote_zoom requests).
+ */
+export const reviewSessionRequest = async (requestId, { status, reviewerNote = '' }) => {
+  const client = getAuthenticatedHttpClient();
+  const { data } = await client.patch(
+    `${getBaseUrl()}/session-requests/${requestId}/review/`,
+    { status, reviewer_note: reviewerNote },
+  );
   return data;
 };
