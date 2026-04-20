@@ -282,7 +282,7 @@ const DayPopover = ({
 
   const handleScroll = () => {
     const el = scrollRef.current;
-    if (!el) return;
+    if (!el) { return; }
     setAtBottom(el.scrollHeight - el.scrollTop <= el.clientHeight + 4);
   };
 
@@ -347,40 +347,40 @@ const DayPopover = ({
           }}
         >
           {sessions.map((session) => (
-          <div
-            key={session.id}
-            className="d-flex align-items-start"
-            style={{ gap: 8, padding: '8px 4px', borderBottom: '1px solid #f0f0f0' }}
-          >
-            <span
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                background: statusColors[session.status] || '#6c757d',
-                marginTop: 6,
-                flexShrink: 0,
-              }}
-            />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 600 }}>
-                <Link
-                  to={`/course/${session.course_id}/sessions/${session.id}`}
-                  className="text-primary d-inline-flex align-items-center"
-                  style={{ gap: 4, textDecoration: 'none' }}
-                >
-                  {session.title}
-                  <Icon src={Launch} style={{ width: 14, height: 14 }} />
-                </Link>
-              </div>
-              {session.course_name && (
+            <div
+              key={session.id}
+              className="d-flex align-items-start"
+              style={{ gap: 8, padding: '8px 4px', borderBottom: '1px solid #f0f0f0' }}
+            >
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: statusColors[session.status] || '#6c757d',
+                  marginTop: 6,
+                  flexShrink: 0,
+                }}
+              />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600 }}>
+                  <Link
+                    to={`/course/${session.course_id}/sessions/${session.id}`}
+                    className="text-primary d-inline-flex align-items-center"
+                    style={{ gap: 4, textDecoration: 'none' }}
+                  >
+                    {session.title}
+                    <Icon src={Launch} style={{ width: 14, height: 14 }} />
+                  </Link>
+                </div>
+                {session.course_name && (
                 <div className="text-muted" style={{ fontSize: 12 }}>{session.course_name}</div>
-              )}
-              {session.instructor_name && (
+                )}
+                {session.instructor_name && (
                 <div className="text-muted" style={{ fontSize: 12 }}>Instructor: {session.instructor_name}</div>
-              )}
-              <div style={{ fontSize: 12, color: '#6c757d' }}>{formatTimeRange(session)}</div>
-              {session.status === 'scheduled' && (
+                )}
+                <div style={{ fontSize: 12, color: '#6c757d' }}>{formatTimeRange(session)}</div>
+                {session.status === 'scheduled' && (
                 <div className="mt-1 d-flex align-items-center" style={{ gap: 4, flexWrap: 'wrap' }}>
                   {canManageSessions && (
                     <>
@@ -450,10 +450,10 @@ const DayPopover = ({
                     })()
                   )}
                 </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
         </div>
         {showScrollHint && (
           <div

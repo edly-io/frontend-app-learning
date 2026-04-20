@@ -11,7 +11,7 @@ import { appendBrowserTimezoneToUrl } from '../../utils';
  */
 function normalizeCourseHomeCourseMetadata(metadata, rootSlug) {
   const data = camelCaseObject(metadata);
-    
+
   // Map existing tabs from backend
   const mappedTabs = data.tabs.map(tab => ({
     // The API uses "courseware" as a slug for both courseware and the outline tab.
@@ -21,7 +21,7 @@ function normalizeCourseHomeCourseMetadata(metadata, rootSlug) {
     title: tab.title,
     url: tab.url,
   }));
-  
+
   // Inject Sessions tab if not already present
   const hasSessionsTab = mappedTabs.some(tab => tab.slug === 'sessions');
   if (!hasSessionsTab) {
@@ -31,7 +31,7 @@ function normalizeCourseHomeCourseMetadata(metadata, rootSlug) {
       url: `${getConfig().LEARNING_BASE_URL}/course/${data.courseId}/sessions`,
     });
   }
-  
+
   return {
     ...data,
     tabs: mappedTabs,

@@ -160,7 +160,7 @@ const StudentSessionList = ({ courseId }) => {
                       accessor: 'meeting_join_url',
                       Cell: ({ row }) => {
                         const session = row.original;
-                        
+
                         if (session.attendance_sync_error) {
                           return (
                             <Badge variant="danger" title={session.attendance_sync_error}>
@@ -168,7 +168,7 @@ const StudentSessionList = ({ courseId }) => {
                             </Badge>
                           );
                         }
-                        
+
                         if (!session.meeting_join_url) {
                           return (
                             <Badge variant="secondary">
@@ -176,7 +176,7 @@ const StudentSessionList = ({ courseId }) => {
                             </Badge>
                           );
                         }
-                        
+
                         return (
                           <Button
                             variant="primary"
@@ -223,10 +223,9 @@ const StudentSessionList = ({ courseId }) => {
                     {
                       Header: 'Date',
                       accessor: 'session_date',
-                      Cell: ({ value }) =>
-                        value
-                          ? formatDateTime(value)
-                          : '-',
+                      Cell: ({ value }) => (value
+                        ? formatDateTime(value)
+                        : '-'),
                     },
                     {
                       Header: 'Join Time',

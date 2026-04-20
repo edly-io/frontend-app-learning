@@ -51,7 +51,7 @@ const SearchableSelect = ({
 
   // Keep query in sync when value is cleared externally (e.g. parent resets state)
   useEffect(() => {
-    if (!value) setQuery('');
+    if (!value) { setQuery(''); }
   }, [value]);
 
   const filteredOptions = options.filter(
@@ -70,12 +70,12 @@ const SearchableSelect = ({
     setIsOpen(true);
     setFocusedIndex(-1);
     // Typing after a confirmed selection clears the selection
-    if (value) onChange(null);
+    if (value) { onChange(null); }
   };
 
   const handleKeyDown = (e) => {
     if (!isOpen) {
-      if (e.key !== 'Escape') setIsOpen(true);
+      if (e.key !== 'Escape') { setIsOpen(true); }
       return;
     }
     switch (e.key) {
@@ -113,21 +113,21 @@ const SearchableSelect = ({
 
       <div ref={containerRef} style={{ position: 'relative' }}>
         {/* Input */}
-          <Form.Control
-            id={id}
-            type="text"
-            value={inputDisplayValue}
-            onChange={handleInputChange}
-            onFocus={() => { if (!value) setIsOpen(true); }}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            disabled={disabled}
-            autoComplete="off"
-            role="combobox"
-            aria-expanded={isOpen}
-            aria-autocomplete="list"
-            aria-controls={`${id}-listbox`}
-          />
+        <Form.Control
+          id={id}
+          type="text"
+          value={inputDisplayValue}
+          onChange={handleInputChange}
+          onFocus={() => { if (!value) { setIsOpen(true); } }}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          disabled={disabled}
+          autoComplete="off"
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-autocomplete="list"
+          aria-controls={`${id}-listbox`}
+        />
 
         {/* Dropdown list */}
         {isOpen && !disabled && (

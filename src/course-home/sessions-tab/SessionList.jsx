@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { DataTable, Badge, IconButton, Spinner, Alert, Button, StandardModal } from '@openedx/paragon';
-import { DeleteOutline, People, EditOutline, Launch, Add } from '@openedx/paragon/icons';
+import {
+  DataTable, Badge, IconButton, Spinner, Alert, Button, StandardModal,
+} from '@openedx/paragon';
+import {
+  DeleteOutline, People, EditOutline, Launch, Add,
+} from '@openedx/paragon/icons';
+import { getAuthenticatedUser } from '@edx/frontend-platform/auth';
 import { getSessions, deleteSession } from './api';
 import { formatDateTime, getStatusVariant, extractApiError } from './utils';
 import { SESSION_STATUS_LABELS } from './constants';
-import { getAuthenticatedUser } from '@edx/frontend-platform/auth';
 
 // Defined outside SessionList so React tracks it as a stable component —
 // required for hooks (useState) to work inside a DataTable Cell renderer.
@@ -35,7 +39,9 @@ const TitleCell = ({ row }) => {
   );
 };
 
-const SessionList = ({ courseId, filter, refreshKey, onViewAttendance, onEditSession, onScheduleNew, onDeleteSuccess, isInstructor }) => {
+const SessionList = ({
+  courseId, filter, refreshKey, onViewAttendance, onEditSession, onScheduleNew, onDeleteSuccess, isInstructor,
+}) => {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -53,7 +59,7 @@ const SessionList = ({ courseId, filter, refreshKey, onViewAttendance, onEditSes
     try {
       const filters = {};
       const now = new Date().toISOString();
-      
+
       if (filter === 'upcoming') {
         filters.start_date = now;
       } else if (filter === 'past') {
@@ -85,8 +91,8 @@ const SessionList = ({ courseId, filter, refreshKey, onViewAttendance, onEditSes
   };
 
   const handleDeleteConfirm = async () => {
-    if (!sessionToDelete) return;
-    
+    if (!sessionToDelete) { return; }
+
     try {
       await deleteSession(courseId, sessionToDelete.id);
       setDeleteModalOpen(false);
@@ -150,44 +156,44 @@ const SessionList = ({ courseId, filter, refreshKey, onViewAttendance, onEditSes
 
   return (
     <>
-    <DataTable
-      data={sessions}
-      itemCount={sessions.length}
-      columns={[
-        {
-          Header: 'Title',
-          accessor: 'title',
-          Cell: TitleCell,
-        },
-        {
-          Header: 'Date & Time',
-          accessor: 'scheduled_start_time',
-          Cell: ({ row }) => {
-            const session = row.original;
-            // Each session row (including recurring occurrences) now has its own
-            // scheduled_start_time set from Zoom's occurrences[].start_time.
-            // next_occurrence_start_time no longer exists on the API response.
-            return (
-              <div>
-                {formatDateTime(session.scheduled_start_time)}
-                {session.is_recurring && (
-                  <Badge variant="info" className="ml-2">Recurring</Badge>
-                )}
-              </div>
-            );
+      <DataTable
+        data={sessions}
+        itemCount={sessions.length}
+        columns={[
+          {
+            Header: 'Title',
+            accessor: 'title',
+            Cell: TitleCell,
           },
-        },
-        {
+          {
+            Header: 'Date & Time',
+            accessor: 'scheduled_start_time',
+            Cell: ({ row }) => {
+              const session = row.original;
+              // Each session row (including recurring occurrences) now has its own
+              // scheduled_start_time set from Zoom's occurrences[].start_time.
+              // next_occurrence_start_time no longer exists on the API response.
+              return (
+                <div>
+                  {formatDateTime(session.scheduled_start_time)}
+                  {session.is_recurring && (
+                  <Badge variant="info" className="ml-2">Recurring</Badge>
+                  )}
+                </div>
+              );
+            },
+          },
+          {
           // Session lifecycle status (scheduled/in_progress/completed/cancelled).
           // Note: the backend does not auto-transition status, so a past session
           // may still read "Scheduled" if no one updated it. The attendance_synced
           // badge below is the most reliable indicator for past sessions.
-          Header: 'Status',
-          accessor: 'status',
-          Cell: ({ value, row }) => (
-            <div>
-              {getStatusBadge(value)}
-              {filter === 'past' && (
+            Header: 'Status',
+            accessor: 'status',
+            Cell: ({ value, row }) => (
+              <div>
+                {getStatusBadge(value)}
+                {filter === 'past' && (
                 <Badge
                   variant={row.original.attendance_synced ? 'success' : 'secondary'}
                   className="d-block mt-1"
@@ -195,112 +201,112 @@ const SessionList = ({ courseId, filter, refreshKey, onViewAttendance, onEditSes
                 >
                   {row.original.attendance_synced ? '\u2713 Synced' : 'Not synced'}
                 </Badge>
-              )}
-            </div>
-          ),
-        },
-        ...(filter !== 'past' ? [{
-          Header: 'Zoom Meeting',
-          accessor: 'meeting_join_url',
-          Cell: ({ row }) => {
-            const session = row.original;
+                )}
+              </div>
+            ),
+          },
+          ...(filter !== 'past' ? [{
+            Header: 'Zoom Meeting',
+            accessor: 'meeting_join_url',
+            Cell: ({ row }) => {
+              const session = row.original;
 
-            // Show error if attendance sync failed
-            if (session.attendance_sync_error) {
+              // Show error if attendance sync failed
+              if (session.attendance_sync_error) {
+                return (
+                  <Badge variant="danger" title={session.attendance_sync_error}>
+                    Sync Error
+                  </Badge>
+                );
+              }
+
+              // If no meeting URL, this is a manual session
+              if (!session.meeting_join_url) {
+                return (
+                  <Badge variant="secondary">
+                    Manual Session
+                  </Badge>
+                );
+              }
+
+              // Instructor (host) uses start_url, students use join_url
+              const isHost = isInstructor || session.instructor_email === currentUser?.email;
+              const meetingUrl = isHost ? session.meeting_start_url : session.meeting_join_url;
+              const buttonText = isHost ? 'Start Meeting' : 'Join Meeting';
+              const buttonVariant = isHost ? 'success' : 'primary';
+
               return (
-                <Badge variant="danger" title={session.attendance_sync_error}>
-                  Sync Error
-                </Badge>
-              );
-            }
-
-            // If no meeting URL, this is a manual session
-            if (!session.meeting_join_url) {
-              return (
-                <Badge variant="secondary">
-                  Manual Session
-                </Badge>
-              );
-            }
-
-            // Instructor (host) uses start_url, students use join_url
-            const isHost = isInstructor || session.instructor_email === currentUser?.email;
-            const meetingUrl = isHost ? session.meeting_start_url : session.meeting_join_url;
-            const buttonText = isHost ? 'Start Meeting' : 'Join Meeting';
-            const buttonVariant = isHost ? 'success' : 'primary';
-
-            return (
-              <div className="d-flex flex-column gap-1">
-                <Button
-                  variant={buttonVariant}
-                  size="sm"
-                  iconAfter={Launch}
-                  aria-label={`${buttonText} for ${session.title} (opens in new tab)`}
-                  onClick={() => {
+                <div className="d-flex flex-column gap-1">
+                  <Button
+                    variant={buttonVariant}
+                    size="sm"
+                    iconAfter={Launch}
+                    aria-label={`${buttonText} for ${session.title} (opens in new tab)`}
+                    onClick={() => {
                     // eslint-disable-next-line no-alert
-                    if (window.confirm(`You are about to leave the course page to ${buttonText.toLowerCase()}. Continue?`)) {
-                      window.open(meetingUrl, '_blank', 'noopener,noreferrer');
-                    }
-                  }}
-                  style={{ width: 'fit-content' }}
-                >
-                  {buttonText}
-                </Button>
-                {session.meeting_password && (
+                      if (window.confirm(`You are about to leave the course page to ${buttonText.toLowerCase()}. Continue?`)) {
+                        window.open(meetingUrl, '_blank', 'noopener,noreferrer');
+                      }
+                    }}
+                    style={{ width: 'fit-content' }}
+                  >
+                    {buttonText}
+                  </Button>
+                  {session.meeting_password && (
                   <small className="text-muted">
                     Password: <code>{session.meeting_password}</code>
                   </small>
-                )}
-              </div>
-            );
-          },
-        }] : []),
-        ...(filter === 'past' ? [{
-          Header: 'Attendance',
-          accessor: 'attendance_action',
-          Cell: ({ row }) => (
-            <Button
-              variant="outline-primary"
-              size="sm"
-              iconBefore={People}
-              aria-label={`View attendance for ${row.original.title}`}
-              onClick={() => onViewAttendance?.(row.original.id)}
-            >
-              View
-            </Button>
-          ),
-        }] : []),
-        ...(filter !== 'past' ? [{
-          Header: 'Edit',
-          accessor: 'edit_action',
-          Cell: ({ row }) => (
-            <IconButton
-              src={EditOutline}
-              iconAs={EditOutline}
-              alt="Edit"
-              size="sm"
-              onClick={() => onEditSession?.(row.original)}
-            />
-          ),
-        }] : []),
-        ...(filter !== 'past' ? [{
-          Header: 'Delete',
-          accessor: 'delete_action',
-          Cell: ({ row }) => (
-            <IconButton
-              src={DeleteOutline}
-              iconAs={DeleteOutline}
-              alt="Delete"
-              size="sm"
-              variant="danger"
-              onClick={() => handleDeleteClick(row.original)}
-            />
-          ),
-        }] : []),
-      ]}
-    />
+                  )}
+                </div>
+              );
+            },
+          }] : []),
+          ...(filter === 'past' ? [{
+            Header: 'Attendance',
+            accessor: 'attendance_action',
+            Cell: ({ row }) => (
+              <Button
+                variant="outline-primary"
+                size="sm"
+                iconBefore={People}
+                aria-label={`View attendance for ${row.original.title}`}
+                onClick={() => onViewAttendance?.(row.original.id)}
+              >
+                View
+              </Button>
+            ),
+          }] : []),
+          ...(filter !== 'past' ? [{
+            Header: 'Edit',
+            accessor: 'edit_action',
+            Cell: ({ row }) => (
+              <IconButton
+                src={EditOutline}
+                iconAs={EditOutline}
+                alt="Edit"
+                size="sm"
+                onClick={() => onEditSession?.(row.original)}
+              />
+            ),
+          }] : []),
+          ...(filter !== 'past' ? [{
+            Header: 'Delete',
+            accessor: 'delete_action',
+            Cell: ({ row }) => (
+              <IconButton
+                src={DeleteOutline}
+                iconAs={DeleteOutline}
+                alt="Delete"
+                size="sm"
+                variant="danger"
+                onClick={() => handleDeleteClick(row.original)}
+              />
+            ),
+          }] : []),
+        ]}
+      />
 
-    {deleteModalOpen && sessionToDelete && (
+      {deleteModalOpen && sessionToDelete && (
       <StandardModal
         isOpen={deleteModalOpen}
         onClose={() => {
@@ -308,7 +314,7 @@ const SessionList = ({ courseId, filter, refreshKey, onViewAttendance, onEditSes
           setSessionToDelete(null);
         }}
         title="Delete Session"
-        footerNode={
+        footerNode={(
           <>
             <Button
               variant="tertiary"
@@ -327,16 +333,16 @@ const SessionList = ({ courseId, filter, refreshKey, onViewAttendance, onEditSes
               Delete
             </Button>
           </>
-        }
+        )}
       >
         <p>
           Are you sure you want to delete the session <strong>{sessionToDelete.title}</strong>?
           This action cannot be undone.
         </p>
       </StandardModal>
-    )}
+      )}
 
-  </>
+    </>
   );
 };
 
