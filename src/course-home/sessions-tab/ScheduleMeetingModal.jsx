@@ -157,7 +157,7 @@ const ScheduleMeetingModal = ({
   const [courseRunOptions, setCourseRunOptions] = useState([]);
   const [instructorOptions, setInstructorOptions] = useState([]);
   const [selectedCourseRun, setSelectedCourseRun] = useState(null);
-  const [selectedInstructor, setSelectedInstructor] = useState(null);
+  const [selectedInstructors, setSelectedInstructors] = useState([]);
   const [selectedClass, setSelectedClass] = useState('');
   const [courseRunsLoading, setCourseRunsLoading] = useState(false);
   const [instructorsLoading, setInstructorsLoading] = useState(false);
@@ -189,11 +189,11 @@ const ScheduleMeetingModal = ({
   useEffect(() => {
     if (!selectedCourseRunId) {
       setInstructorOptions([]);
-      setSelectedInstructor(null);
+      setSelectedInstructors([]);
       return;
     }
     setInstructorsLoading(true);
-    setSelectedInstructor(null);
+    setSelectedInstructors([]);
     fetchInstructors(selectedCourseRunId)
       .then((data) => setInstructorOptions(
         data.map((i) => ({ value: i.user_id, label: i.name, email: i.email })),
@@ -202,11 +202,17 @@ const ScheduleMeetingModal = ({
       .finally(() => setInstructorsLoading(false));
   }, [selectedCourseRunId]);
 
-  // Pre-fill instructor once options are loaded (edit mode only)
+  // Pre-fill instructors once options are loaded (edit mode only).
+  // Backend returns `instructor_emails` (ordered); match each to the loaded
+  // instructor options and preserve order.
   useEffect(() => {
     if (!session || instructorOptions.length === 0) { return; }
-    const match = instructorOptions.find((i) => i.email === session.instructor_email);
-    if (match) { setSelectedInstructor(match); }
+    const emails = session.instructor_emails || [];
+    if (emails.length === 0) { return; }
+    const matched = emails
+      .map((email) => instructorOptions.find((i) => i.email === email))
+      .filter(Boolean);
+    if (matched.length > 0) { setSelectedInstructors(matched); }
   }, [instructorOptions, session]);
 
   // Pre-fill form when editing
@@ -287,7 +293,7 @@ const ScheduleMeetingModal = ({
       setEndCount(10);
       setEndDate('');
       setSelectedCourseRun(null);
-      setSelectedInstructor(null);
+      setSelectedInstructors([]);
       setSelectedClass('');
       setInstructorOptions([]);
     }
@@ -364,7 +370,7 @@ const ScheduleMeetingModal = ({
       setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
       return false;
     }
-    if (!selectedInstructor) {
+    if (selectedInstructors.length === 0) {
       setError('Instructor is required');
       setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
       return false;
@@ -483,7 +489,7 @@ const ScheduleMeetingModal = ({
         scheduled_end_time: toISOString(formData.scheduled_end_time),
         timezone: timezoneName,
         is_recurring: isRecurring,
-        ...(selectedInstructor && { instructor_email: selectedInstructor.email }),
+        instructor_emails: selectedInstructors.map((i) => i.email),
       };
       sessionData.create_zoom_meeting = createZoomMeeting;
       if (recurrence) {
@@ -585,8 +591,9 @@ const ScheduleMeetingModal = ({
             id="session-instructor"
             label="Instructor"
             options={instructorOptions}
-            value={selectedInstructor}
-            onChange={setSelectedInstructor}
+            value={selectedInstructors}
+            onChange={setSelectedInstructors}
+            multiple
             placeholder={selectedCourseRun ? 'Search by name...' : 'Select a course first'}
             loading={instructorsLoading}
             disabled={!selectedCourseRun}

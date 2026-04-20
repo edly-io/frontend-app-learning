@@ -229,8 +229,12 @@ const SessionList = ({
                 );
               }
 
-              // Instructor (host) uses start_url, students use join_url
-              const isHost = isInstructor || session.instructor_email === currentUser?.email;
+              // Instructor (host) uses start_url, students use join_url.
+              // Roster match: any listed instructor email equals the current
+              // user. (Zoom host is the creator on the backend; this is a
+              // roster-based UI signal, not an authoritative host check.)
+              const rosterEmails = session.instructor_emails || [];
+              const isHost = isInstructor || rosterEmails.includes(currentUser?.email);
               const meetingUrl = isHost ? session.meeting_start_url : session.meeting_join_url;
               const buttonText = isHost ? 'Start Meeting' : 'Join Meeting';
               const buttonVariant = isHost ? 'success' : 'primary';
