@@ -14,6 +14,8 @@ import { Launch } from '@openedx/paragon/icons';
 import { getAttendanceRecords, getSessions } from './api';
 import { formatDateTime, extractApiError } from './utils';
 import { ATTENDANCE_STATUS } from './constants';
+import RequestStatusBadge from './RequestStatusBadge';
+import SessionRequestModal from './SessionRequestModal';
 
 // Defined outside StudentSessionList so hooks (useState) are allowed inside.
 const StudentTitleCell = ({ row }) => {
@@ -48,10 +50,13 @@ const StudentSessionList = ({ courseId }) => {
   const [upcomingSessions, setUpcomingSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [requestModalSession, setRequestModalSession] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     fetchData();
-  }, [courseId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseId, refreshKey]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -160,6 +165,7 @@ const StudentSessionList = ({ courseId }) => {
                       accessor: 'meeting_join_url',
                       Cell: ({ row }) => {
                         const session = row.original;
+                        const myRequest = session.my_request;
 
                         if (session.attendance_sync_error) {
                           return (
@@ -169,28 +175,87 @@ const StudentSessionList = ({ courseId }) => {
                           );
                         }
 
-                        if (!session.meeting_join_url) {
+                        // Public Zoom (scenario 1) — anyone enrolled can join.
+                        // Leave requests are still allowed independently of Zoom access.
+                        if (session.create_zoom_meeting && session.meeting_join_url) {
+                          // After promotion, an auto-approved remote_zoom row is
+                          // redundant — hide it so the learner just sees Join.
+                          const hideRequestUi = (
+                            myRequest?.status === 'approved'
+                            && myRequest?.request_type === 'remote_zoom'
+                          );
                           return (
-                            <Badge variant="secondary">
-                              Manual
-                            </Badge>
+                            <div className="d-flex flex-column" style={{ gap: 4 }}>
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                iconAfter={Launch}
+                                aria-label={`Join meeting for ${session.title} (opens in new tab)`}
+                                onClick={() => {
+                                  // eslint-disable-next-line no-alert
+                                  if (window.confirm('You are about to leave the course page to join a session. Continue?')) {
+                                    window.open(session.meeting_join_url, '_blank', 'noopener,noreferrer');
+                                  }
+                                }}
+                                style={{ width: 'fit-content' }}
+                              >
+                                Join Meeting
+                              </Button>
+                              {!hideRequestUi && (myRequest ? (
+                                <RequestStatusBadge request={myRequest} />
+                              ) : (
+                                <Button
+                                  variant="outline-primary"
+                                  size="sm"
+                                  onClick={() => setRequestModalSession(session)}
+                                  style={{ width: 'fit-content' }}
+                                >
+                                  Request leave
+                                </Button>
+                              ))}
+                            </div>
                           );
                         }
 
+                        // Gated Zoom (scenario 2) — learner has approved remote_zoom request.
+                        const learnerCanJoin = (
+                          myRequest?.status === 'approved'
+                          && myRequest?.request_type === 'remote_zoom'
+                        );
+                        const joinUrl = session.meeting_join_url || myRequest?.meeting_join_url;
+                        if (learnerCanJoin && joinUrl) {
+                          return (
+                            <div className="d-flex flex-column" style={{ gap: 4 }}>
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                iconAfter={Launch}
+                                aria-label={`Join remote meeting for ${session.title} (opens in new tab)`}
+                                onClick={() => {
+                                  // eslint-disable-next-line no-alert
+                                  if (window.confirm('You are about to leave the course page to join a session. Continue?')) {
+                                    window.open(joinUrl, '_blank', 'noopener,noreferrer');
+                                  }
+                                }}
+                              >
+                                Join Remote
+                              </Button>
+                              <RequestStatusBadge request={myRequest} />
+                            </div>
+                          );
+                        }
+
+                        // In-person or scenario-2 not approved — show request CTA / status.
+                        if (myRequest) {
+                          return <RequestStatusBadge request={myRequest} />;
+                        }
                         return (
                           <Button
-                            variant="primary"
+                            variant="outline-primary"
                             size="sm"
-                            iconAfter={Launch}
-                            aria-label={`Join meeting for ${session.title} (opens in new tab)`}
-                            onClick={() => {
-                              // eslint-disable-next-line no-alert
-                              if (window.confirm('You are about to leave the course page to join a session. Continue?')) {
-                                window.open(session.meeting_join_url, '_blank', 'noopener,noreferrer');
-                              }
-                            }}
+                            onClick={() => setRequestModalSession(session)}
                           >
-                            Join Meeting
+                            Request
                           </Button>
                         );
                       },
@@ -263,6 +328,17 @@ const StudentSessionList = ({ courseId }) => {
           </Tab>
         </Tabs>
       </Card>
+
+      <SessionRequestModal
+        isOpen={Boolean(requestModalSession)}
+        onClose={() => setRequestModalSession(null)}
+        session={requestModalSession}
+        sessionHasZoom={Boolean(requestModalSession?.create_zoom_meeting)}
+        onSuccess={() => {
+          setRequestModalSession(null);
+          setRefreshKey((k) => k + 1);
+        }}
+      />
     </Container>
   );
 };

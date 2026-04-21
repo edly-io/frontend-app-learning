@@ -5,7 +5,9 @@ import {
   Container, Spinner, Alert, Toast, StandardModal, Button,
 } from '@openedx/paragon';
 import { FooterSlot } from '@edx/frontend-component-footer';
-import { getCalendarSessions, deleteSession, getMySessionRequests } from '../api';
+import {
+  getCalendarSessions, deleteSession, getMySessionRequests, updateSession,
+} from '../api';
 import { extractApiError } from '../utils';
 import { USER_ROLE } from '../constants';
 import ScheduleMeetingModal from '../ScheduleMeetingModal';
@@ -188,6 +190,24 @@ const CalendarPage = () => {
     setRequestModalSession(session);
   }, []);
 
+  // Admin scenario-2 → scenario-1 promotion. Flag flip only — backend reuses
+  // the existing meeting and auto-approves any pending remote_zoom requests.
+  const handlePromoteSession = useCallback(async (session) => {
+    if (!session) { return; }
+    // eslint-disable-next-line no-alert
+    const ok = window.confirm(
+      `Open "${session.title}" to all enrolled learners? This will reveal the existing Zoom link to everyone and auto-approve any pending remote-attendance requests.`,
+    );
+    if (!ok) { return; }
+    try {
+      await updateSession(session.course_id, session.id, { create_zoom_meeting: true });
+      setRefreshKey((prev) => prev + 1);
+      showSuccess('Session promoted to public Zoom.');
+    } catch (err) {
+      setError(extractApiError(err, 'Failed to promote session'));
+    }
+  }, []);
+
   const handleRequestSuccess = (created) => {
     // Optimistically merge the new request so the popover flips to "Pending"
     // without waiting for a full calendar refetch.
@@ -238,6 +258,7 @@ const CalendarPage = () => {
           isHost={isHost}
           studentRequestMap={myRequests}
           onRequestSession={handleRequestSession}
+          onPromoteSession={canManageSessions ? handlePromoteSession : undefined}
         />
       </Container>
     );

@@ -27,14 +27,16 @@ const SessionRequestModal = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Reset state whenever the modal opens against a new session.
+  // Reset state whenever the modal opens against a new session. When the session
+  // already has a public Zoom, remote_zoom is disabled — default to leave so the
+  // user doesn't land on a disabled radio.
   useEffect(() => {
     if (!isOpen) { return; }
-    setRequestType(REQUEST_TYPE.REMOTE_ZOOM);
+    setRequestType(sessionHasZoom ? REQUEST_TYPE.LEAVE : REQUEST_TYPE.REMOTE_ZOOM);
     setReason('');
     setError('');
     setLoading(false);
-  }, [isOpen, session?.id]);
+  }, [isOpen, session?.id, sessionHasZoom]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

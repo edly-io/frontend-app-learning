@@ -119,13 +119,33 @@ const formatTimeRange = (session) => {
   return `${startLabel} – ${endLabel}`;
 };
 
+/**
+ * Format the instructor display string from the new plural `instructor_names`
+ * field, falling back to the legacy `instructor_name` singular for old payloads.
+ */
+const formatInstructors = (session) => {
+  const names = session.instructor_names;
+  if (Array.isArray(names) && names.length) { return names.join(', '); }
+  return session.instructor_name || '';
+};
+
 // Controlled popover — only one popover can be open across the whole calendar at
 // any time, and it closes cleanly when Edit/Delete opens another modal.
 const SessionPopover = ({
   session, children, isOpen, onOpenChange, onEdit, onDelete, canManageSessions = false,
-  isLearner = false, isHost = false, learnerRequest = null, onRequestSession,
+  isLearner = false, isHost = false, learnerRequest = null, onRequestSession, onPromoteSession,
 }) => {
   const statusLabel = SESSION_STATUS_LABELS[session.status] || session.status;
+  const instructorDisplay = formatInstructors(session);
+  // Prefer the per-session `my_request` returned by the API; fall back to the
+  // window-level studentRequestMap for backward compatibility with older payloads.
+  const myRequest = session.my_request ?? learnerRequest;
+  const hasMeeting = Boolean(session.meeting_id || session.meeting_join_url);
+  const isGated = hasMeeting && !session.create_zoom_meeting;
+  const learnerCanJoin = (
+    session.create_zoom_meeting
+    || (myRequest?.status === 'approved' && myRequest?.request_type === 'remote_zoom')
+  );
 
   const handleEdit = (e) => {
     e.stopPropagation();
@@ -149,6 +169,12 @@ const SessionPopover = ({
     e.stopPropagation();
     onOpenChange(false);
     onRequestSession?.(session);
+  };
+
+  const handlePromote = (e) => {
+    e.stopPropagation();
+    onOpenChange(false);
+    onPromoteSession?.(session);
   };
 
   const popover = (
@@ -184,15 +210,21 @@ const SessionPopover = ({
         {session.course_name && (
           <div className="text-muted mb-1">{session.course_name}</div>
         )}
-        {session.instructor_name && (
-          <div className="text-muted mb-1">Instructor: {session.instructor_name}</div>
+        {instructorDisplay && (
+          <div className="text-muted mb-1">Instructor: {instructorDisplay}</div>
         )}
         {/* Time + status badge on the same row */}
         <div className="d-flex align-items-center mb-2" style={{ gap: 8, flexWrap: 'wrap' }}>
           <span>{formatTimeRange(session)}</span>
         </div>
-        <div className="mb-2">
+        <div className="mb-2 d-flex" style={{ gap: 4, flexWrap: 'wrap' }}>
           <Badge variant={getStatusVariant(session.status)}>{statusLabel}</Badge>
+          {/* Admin-only meeting scope hint. Public = scenario 1, Gated = scenario 2. */}
+          {canManageSessions && hasMeeting && (
+            session.create_zoom_meeting
+              ? <Badge variant="success">Public Zoom</Badge>
+              : <Badge variant="warning">Gated Zoom</Badge>
+          )}
         </div>
         {session.status === 'scheduled' && (
           <div className="d-flex align-items-center" style={{ gap: 6, flexWrap: 'wrap' }}>
@@ -210,35 +242,45 @@ const SessionPopover = ({
                 >
                   Delete
                 </Button>
+                {isGated && onPromoteSession && (
+                  <Button variant="outline-success" size="sm" onClick={handlePromote}>
+                    Promote to public
+                  </Button>
+                )}
               </>
             )}
-            {/* Host (admin/instructor) → Start with meeting_start_url.
-                Others → Join with session meeting_join_url, or learner's personal approved link. */}
+            {/* Host (admin/instructor) → Start with meeting_start_url. */}
+            {isHost && session.meeting_start_url && (
+              <Button
+                variant="success"
+                size="sm"
+                iconAfter={Launch}
+                onClick={(e) => handleJoin(e, session.meeting_start_url)}
+              >
+                Start
+              </Button>
+            )}
+            {/* Join button — admins always when URL present; learners only when scope allows. */}
             {(() => {
-              if (isHost && session.meeting_start_url) {
-                return (
-                  <Button
-                    variant="success"
-                    size="sm"
-                    iconAfter={Launch}
-                    onClick={(e) => handleJoin(e, session.meeting_start_url)}
-                  >
-                    Start
-                  </Button>
-                );
-              }
-              const joinUrl = session.meeting_join_url
-                || (isLearner ? learnerRequest?.meeting_join_url : null);
+              if (isHost && session.meeting_start_url) { return null; }
+              if (isLearner && !learnerCanJoin) { return null; }
+              const joinUrl = session.meeting_join_url || myRequest?.meeting_join_url;
               return joinUrl ? (
                 <Button variant="primary" size="sm" iconAfter={Launch} onClick={(e) => handleJoin(e, joinUrl)}>
                   Join
                 </Button>
               ) : null;
             })()}
-            {/* Learner-only: request CTA or status badge. */}
-            {isLearner && (
-              learnerRequest ? (
-                <RequestStatusBadge request={learnerRequest} />
+            {/* Learner-only: request CTA or status badge. Hide when an approved
+                remote_zoom request was auto-resolved by promoting the session to
+                public — the per-learner row is now redundant. */}
+            {isLearner && !(
+              session.create_zoom_meeting
+              && myRequest?.status === 'approved'
+              && myRequest?.request_type === 'remote_zoom'
+            ) && (
+              myRequest ? (
+                <RequestStatusBadge request={myRequest} />
               ) : (
                 <Button variant="outline-primary" size="sm" onClick={handleRequest}>
                   Request
@@ -271,7 +313,7 @@ const SessionPopover = ({
 
 const DayPopover = ({
   date, sessions, children, isOpen, onOpenChange, onEdit, onDelete, canManageSessions = false,
-  isLearner = false, isHost = false, studentRequestMap, onRequestSession,
+  isLearner = false, isHost = false, studentRequestMap, onRequestSession, onPromoteSession,
 }) => {
   const dateLabel = date.toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
@@ -312,6 +354,12 @@ const DayPopover = ({
     onRequestSession?.(session);
   };
 
+  const handlePromote = (e, session) => {
+    e.stopPropagation();
+    onOpenChange(false);
+    onPromoteSession?.(session);
+  };
+
   const popover = (
     <Popover
       id={`day-popover-${toDateKey(date)}`}
@@ -346,98 +394,126 @@ const DayPopover = ({
             fontSize: 13, maxHeight: 360, overflowY: 'auto', padding: 8,
           }}
         >
-          {sessions.map((session) => (
-            <div
-              key={session.id}
-              className="d-flex align-items-start"
-              style={{ gap: 8, padding: '8px 4px', borderBottom: '1px solid #f0f0f0' }}
-            >
-              <span
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  background: statusColors[session.status] || '#6c757d',
-                  marginTop: 6,
-                  flexShrink: 0,
-                }}
-              />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600 }}>
-                  <Link
-                    to={`/course/${session.course_id}/sessions/${session.id}`}
-                    className="text-primary d-inline-flex align-items-center"
-                    style={{ gap: 4, textDecoration: 'none' }}
-                  >
-                    {session.title}
-                    <Icon src={Launch} style={{ width: 14, height: 14 }} />
-                  </Link>
-                </div>
-                {session.course_name && (
-                <div className="text-muted" style={{ fontSize: 12 }}>{session.course_name}</div>
-                )}
-                {session.instructor_name && (
-                <div className="text-muted" style={{ fontSize: 12 }}>Instructor: {session.instructor_name}</div>
-                )}
-                <div style={{ fontSize: 12, color: '#6c757d' }}>{formatTimeRange(session)}</div>
-                {session.status === 'scheduled' && (
-                <div className="mt-1 d-flex align-items-center" style={{ gap: 4, flexWrap: 'wrap' }}>
-                  {canManageSessions && (
-                    <>
-                      <Button
-                        variant="tertiary"
-                        size="sm"
-                        iconBefore={EditOutline}
-                        onClick={(e) => handleEdit(e, session)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="tertiary"
-                        size="sm"
-                        iconBefore={DeleteOutline}
-                        style={{ color: '#dc3545' }}
-                        onClick={(e) => handleDelete(e, session)}
-                      >
-                        Delete
-                      </Button>
-                    </>
+          {sessions.map((session) => {
+            const instructorDisplay = formatInstructors(session);
+            const myRequest = session.my_request ?? studentRequestMap?.get(session.id);
+            const hasMeeting = Boolean(session.meeting_id || session.meeting_join_url);
+            const isGated = hasMeeting && !session.create_zoom_meeting;
+            const learnerCanJoin = (
+              session.create_zoom_meeting
+              || (myRequest?.status === 'approved' && myRequest?.request_type === 'remote_zoom')
+            );
+            return (
+              <div
+                key={session.id}
+                className="d-flex align-items-start"
+                style={{ gap: 8, padding: '8px 4px', borderBottom: '1px solid #f0f0f0' }}
+              >
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: statusColors[session.status] || '#6c757d',
+                    marginTop: 6,
+                    flexShrink: 0,
+                  }}
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600 }}>
+                    <Link
+                      to={`/course/${session.course_id}/sessions/${session.id}`}
+                      className="text-primary d-inline-flex align-items-center"
+                      style={{ gap: 4, textDecoration: 'none' }}
+                    >
+                      {session.title}
+                      <Icon src={Launch} style={{ width: 14, height: 14 }} />
+                    </Link>
+                  </div>
+                  {session.course_name && (
+                  <div className="text-muted" style={{ fontSize: 12 }}>{session.course_name}</div>
                   )}
-                  {/* Host (admin/instructor) → Start with meeting_start_url.
-                      Others → Join with session meeting_join_url, or learner's personal approved link. */}
-                  {(() => {
-                    if (isHost && session.meeting_start_url) {
-                      return (
+                  {instructorDisplay && (
+                  <div className="text-muted" style={{ fontSize: 12 }}>Instructor: {instructorDisplay}</div>
+                  )}
+                  <div style={{ fontSize: 12, color: '#6c757d' }}>{formatTimeRange(session)}</div>
+                  {/* Admin-only Zoom scope hint. */}
+                  {canManageSessions && hasMeeting && (
+                    <div className="mt-1">
+                      {session.create_zoom_meeting
+                        ? <Badge variant="success">Public Zoom</Badge>
+                        : <Badge variant="warning">Gated Zoom</Badge>}
+                    </div>
+                  )}
+                  {session.status === 'scheduled' && (
+                  <div className="mt-1 d-flex align-items-center" style={{ gap: 4, flexWrap: 'wrap' }}>
+                    {canManageSessions && (
+                      <>
                         <Button
-                          variant="success"
+                          variant="tertiary"
                           size="sm"
-                          iconAfter={Launch}
-                          onClick={(e) => handleJoin(e, session.meeting_start_url)}
+                          iconBefore={EditOutline}
+                          onClick={(e) => handleEdit(e, session)}
                         >
-                          Start
+                          Edit
                         </Button>
-                      );
-                    }
-                    const sessionRequest = studentRequestMap?.get(session.id);
-                    const joinUrl = session.meeting_join_url
-                      || (isLearner ? sessionRequest?.meeting_join_url : null);
-                    return joinUrl ? (
+                        <Button
+                          variant="tertiary"
+                          size="sm"
+                          iconBefore={DeleteOutline}
+                          style={{ color: '#dc3545' }}
+                          onClick={(e) => handleDelete(e, session)}
+                        >
+                          Delete
+                        </Button>
+                        {isGated && onPromoteSession && (
+                          <Button
+                            variant="outline-success"
+                            size="sm"
+                            onClick={(e) => handlePromote(e, session)}
+                          >
+                            Promote
+                          </Button>
+                        )}
+                      </>
+                    )}
+                    {/* Host → Start with meeting_start_url. */}
+                    {isHost && session.meeting_start_url && (
                       <Button
-                        variant="primary"
+                        variant="success"
                         size="sm"
                         iconAfter={Launch}
-                        onClick={(e) => handleJoin(e, joinUrl)}
+                        onClick={(e) => handleJoin(e, session.meeting_start_url)}
                       >
-                        Join
+                        Start
                       </Button>
-                    ) : null;
-                  })()}
-                  {/* Learner-only: request CTA or status badge. */}
-                  {isLearner && (
-                    (() => {
-                      const sessionRequest = studentRequestMap?.get(session.id);
-                      return sessionRequest ? (
-                        <RequestStatusBadge request={sessionRequest} />
+                    )}
+                    {/* Join — admins always when URL present; learners only when scope allows. */}
+                    {(() => {
+                      if (isHost && session.meeting_start_url) { return null; }
+                      if (isLearner && !learnerCanJoin) { return null; }
+                      const joinUrl = session.meeting_join_url || myRequest?.meeting_join_url;
+                      return joinUrl ? (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          iconAfter={Launch}
+                          onClick={(e) => handleJoin(e, joinUrl)}
+                        >
+                          Join
+                        </Button>
+                      ) : null;
+                    })()}
+                    {/* Learner-only: request CTA or status badge. Hide when an
+                        approved remote_zoom request was auto-resolved by promoting
+                        the session to public. */}
+                    {isLearner && !(
+                      session.create_zoom_meeting
+                      && myRequest?.status === 'approved'
+                      && myRequest?.request_type === 'remote_zoom'
+                    ) && (
+                      myRequest ? (
+                        <RequestStatusBadge request={myRequest} />
                       ) : (
                         <Button
                           variant="outline-primary"
@@ -446,14 +522,14 @@ const DayPopover = ({
                         >
                           Request
                         </Button>
-                      );
-                    })()
+                      )
+                    )}
+                  </div>
                   )}
                 </div>
-                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         {showScrollHint && (
           <div
@@ -499,7 +575,7 @@ const DayCell = ({
   openPopoverId, setOpenPopoverId,
   openDayKey, setOpenDayKey,
   isOutsideMonth = false, cellMinHeight = 110, canManageSessions = false,
-  isLearner = false, isHost = false, studentRequestMap, onRequestSession,
+  isLearner = false, isHost = false, studentRequestMap, onRequestSession, onPromoteSession,
 }) => {
   const dateKey = toDateKey(date);
   const today = toDateKey(new Date());
@@ -581,6 +657,7 @@ const DayCell = ({
           isHost={isHost}
           learnerRequest={studentRequestMap?.get(session.id) || null}
           onRequestSession={onRequestSession}
+          onPromoteSession={onPromoteSession}
         >
           <button
             type="button"
@@ -647,6 +724,7 @@ const DayCell = ({
       isHost={isHost}
       studentRequestMap={studentRequestMap}
       onRequestSession={onRequestSession}
+      onPromoteSession={onPromoteSession}
     >
       {cellContent}
     </DayPopover>
@@ -659,7 +737,7 @@ const MonthGrid = ({
   currentDate, sessionMap, onEditSession, onDeleteSession,
   openPopoverId, setOpenPopoverId,
   openDayKey, setOpenDayKey, canManageSessions = false,
-  isLearner = false, isHost = false, studentRequestMap, onRequestSession,
+  isLearner = false, isHost = false, studentRequestMap, onRequestSession, onPromoteSession,
 }) => {
   const days = getMonthGridDays(currentDate);
   const currentMonth = currentDate.getMonth();
@@ -717,6 +795,7 @@ const MonthGrid = ({
             isHost={isHost}
             studentRequestMap={studentRequestMap}
             onRequestSession={onRequestSession}
+            onPromoteSession={onPromoteSession}
           />
         ))}
       </div>
@@ -806,7 +885,7 @@ const layoutSessions = (sessions) => {
 const TimeGrid = ({
   days, sessionMap, onEditSession, onDeleteSession,
   openPopoverId, setOpenPopoverId, canManageSessions = false,
-  isLearner = false, isHost = false, studentRequestMap, onRequestSession,
+  isLearner = false, isHost = false, studentRequestMap, onRequestSession, onPromoteSession,
 }) => {
   const todayKey = toDateKey(new Date());
 
@@ -928,6 +1007,7 @@ const TimeGrid = ({
                       isHost={isHost}
                       learnerRequest={studentRequestMap?.get(session.id) || null}
                       onRequestSession={onRequestSession}
+                      onPromoteSession={onPromoteSession}
                     >
                       <button
                         type="button"
@@ -999,7 +1079,7 @@ const TimeGrid = ({
 const WeekGrid = ({
   currentDate, sessionMap, onEditSession, onDeleteSession,
   openPopoverId, setOpenPopoverId, canManageSessions = false,
-  isLearner = false, isHost = false, studentRequestMap, onRequestSession,
+  isLearner = false, isHost = false, studentRequestMap, onRequestSession, onPromoteSession,
 }) => (
   <TimeGrid
     days={getWeekDays(currentDate)}
@@ -1013,6 +1093,7 @@ const WeekGrid = ({
     isHost={isHost}
     studentRequestMap={studentRequestMap}
     onRequestSession={onRequestSession}
+    onPromoteSession={onPromoteSession}
   />
 );
 
@@ -1021,7 +1102,7 @@ const WeekGrid = ({
 const DayView = ({
   currentDate, sessionMap, onEditSession, onDeleteSession,
   openPopoverId, setOpenPopoverId, canManageSessions = false,
-  isLearner = false, isHost = false, studentRequestMap, onRequestSession,
+  isLearner = false, isHost = false, studentRequestMap, onRequestSession, onPromoteSession,
 }) => (
   <TimeGrid
     days={[currentDate]}
@@ -1035,6 +1116,7 @@ const DayView = ({
     isHost={isHost}
     studentRequestMap={studentRequestMap}
     onRequestSession={onRequestSession}
+    onPromoteSession={onPromoteSession}
   />
 );
 
@@ -1043,7 +1125,7 @@ const DayView = ({
 const CalendarView = ({
   sessions, view, currentDate, onViewChange, onNavigate, onGoToToday,
   onScheduleNew, onEditSession, onDeleteSession, loading = false, canManageSessions = false,
-  isLearner = false, isHost = false, studentRequestMap, onRequestSession,
+  isLearner = false, isHost = false, studentRequestMap, onRequestSession, onPromoteSession,
 }) => {
   // Only one popover open at a time; null = none. Chip clicks and outside
   // clicks flip this; Edit/Delete actions also reset it before bubbling up.
@@ -1165,6 +1247,7 @@ const CalendarView = ({
           isHost={isHost}
           studentRequestMap={studentRequestMap}
           onRequestSession={onRequestSession}
+          onPromoteSession={onPromoteSession}
         />
         )}
         {view === VIEWS.WEEK && (
@@ -1180,6 +1263,7 @@ const CalendarView = ({
           isHost={isHost}
           studentRequestMap={studentRequestMap}
           onRequestSession={onRequestSession}
+          onPromoteSession={onPromoteSession}
         />
         )}
         {view === VIEWS.DAY && (
@@ -1195,6 +1279,7 @@ const CalendarView = ({
           isHost={isHost}
           studentRequestMap={studentRequestMap}
           onRequestSession={onRequestSession}
+          onPromoteSession={onPromoteSession}
         />
         )}
       </div>

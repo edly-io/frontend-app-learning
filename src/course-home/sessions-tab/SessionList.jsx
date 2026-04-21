@@ -6,7 +6,7 @@ import {
   DeleteOutline, People, EditOutline, Launch, Add,
 } from '@openedx/paragon/icons';
 import { getAuthenticatedUser } from '@edx/frontend-platform/auth';
-import { getSessions, deleteSession } from './api';
+import { getSessions, deleteSession, updateSession } from './api';
 import { formatDateTime, getStatusVariant, extractApiError } from './utils';
 import { SESSION_STATUS_LABELS } from './constants';
 
@@ -88,6 +88,22 @@ const SessionList = ({
   const handleDeleteClick = (session) => {
     setSessionToDelete(session);
     setDeleteModalOpen(true);
+  };
+
+  // Scenario-2 → scenario-1 promotion. Backend reuses the existing meeting
+  // and auto-approves any pending remote_zoom requests for this session.
+  const handlePromote = async (session) => {
+    // eslint-disable-next-line no-alert
+    const ok = window.confirm(
+      `Open "${session.title}" to all enrolled learners? The current Zoom link will become visible to everyone, and any pending remote-attendance requests will be auto-approved.`,
+    );
+    if (!ok) { return; }
+    try {
+      await updateSession(courseId, session.id, { create_zoom_meeting: true });
+      fetchSessions();
+    } catch (err) {
+      setError(extractApiError(err, 'Failed to promote session'));
+    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -238,9 +254,15 @@ const SessionList = ({
               const meetingUrl = isHost ? session.meeting_start_url : session.meeting_join_url;
               const buttonText = isHost ? 'Start Meeting' : 'Join Meeting';
               const buttonVariant = isHost ? 'success' : 'primary';
+              const isGated = !session.create_zoom_meeting;
 
               return (
-                <div className="d-flex flex-column gap-1">
+                <div className="d-flex flex-column" style={{ gap: 4 }}>
+                  <div>
+                    {session.create_zoom_meeting
+                      ? <Badge variant="success">Public Zoom</Badge>
+                      : <Badge variant="warning">Gated Zoom</Badge>}
+                  </div>
                   <Button
                     variant={buttonVariant}
                     size="sm"
@@ -256,6 +278,16 @@ const SessionList = ({
                   >
                     {buttonText}
                   </Button>
+                  {isInstructor && isGated && (
+                    <Button
+                      variant="outline-success"
+                      size="sm"
+                      onClick={() => handlePromote(session)}
+                      style={{ width: 'fit-content' }}
+                    >
+                      Promote to public
+                    </Button>
+                  )}
                   {session.meeting_password && (
                   <small className="text-muted">
                     Password: <code>{session.meeting_password}</code>

@@ -686,14 +686,24 @@ const ScheduleMeetingModal = ({
                 const next = e.target.checked;
                 setCreateZoomMeeting(next);
               }}
-              disabled={Boolean(session?.meeting_join_url)}
+              disabled={Boolean(session?.create_zoom_meeting)}
             >
               Create Zoom meeting for this session
             </Form.Checkbox>
             <Form.Text className="text-muted">
-              Only create a Zoom meeting if you plan to use it for this session.
-              Remote learners get individual Zoom links when you approve their
-              session requests.
+              {session?.meeting_id && !session?.create_zoom_meeting ? (
+                <>
+                  This session has a Zoom meeting created from a remote-attendance
+                  request. Checking this opens it to all enrolled learners and
+                  auto-approves any pending remote requests.
+                </>
+              ) : (
+                <>
+                  Only create a Zoom meeting if you plan to use it for this session.
+                  Remote learners get individual Zoom links when you approve their
+                  session requests.
+                </>
+              )}
             </Form.Text>
           </Form.Group>
 
