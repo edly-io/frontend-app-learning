@@ -5,10 +5,10 @@ import {
 import {
   DeleteOutline, People, EditOutline, Launch, Add,
 } from '@openedx/paragon/icons';
-import { getAuthenticatedUser } from '@edx/frontend-platform/auth';
-import { getSessions, deleteSession, updateSession } from './api';
+import { getSessions, deleteSession } from './api';
 import { formatDateTime, getStatusVariant, extractApiError } from './utils';
 import { SESSION_STATUS_LABELS } from './constants';
+import ScopeBadge from './ScopeBadge';
 
 // Defined outside SessionList so React tracks it as a stable component —
 // required for hooks (useState) to work inside a DataTable Cell renderer.
@@ -47,7 +47,6 @@ const SessionList = ({
   const [error, setError] = useState('');
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState(null);
-  const currentUser = getAuthenticatedUser();
 
   useEffect(() => {
     fetchSessions();
@@ -88,22 +87,6 @@ const SessionList = ({
   const handleDeleteClick = (session) => {
     setSessionToDelete(session);
     setDeleteModalOpen(true);
-  };
-
-  // Scenario-2 → scenario-1 promotion. Backend reuses the existing meeting
-  // and auto-approves any pending remote_zoom requests for this session.
-  const handlePromote = async (session) => {
-    // eslint-disable-next-line no-alert
-    const ok = window.confirm(
-      `Open "${session.title}" to all enrolled learners? The current Zoom link will become visible to everyone, and any pending remote-attendance requests will be auto-approved.`,
-    );
-    if (!ok) { return; }
-    try {
-      await updateSession(courseId, session.id, { create_zoom_meeting: true });
-      fetchSessions();
-    } catch (err) {
-      setError(extractApiError(err, 'Failed to promote session'));
-    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -238,30 +221,19 @@ const SessionList = ({
 
               // If no meeting URL, this is a manual session
               if (!session.meeting_join_url) {
-                return (
-                  <Badge variant="secondary">
-                    Manual Session
-                  </Badge>
-                );
+                return <ScopeBadge scope="in_person" />;
               }
 
-              // Instructor (host) uses start_url, students use join_url.
-              // Roster match: any listed instructor email equals the current
-              // user. (Zoom host is the creator on the backend; this is a
-              // roster-based UI signal, not an authoritative host check.)
-              const rosterEmails = session.instructor_emails || [];
-              const isHost = isInstructor || rosterEmails.includes(currentUser?.email);
+              // Admins host the meeting (start_url); everyone else joins.
+              const isHost = isInstructor;
               const meetingUrl = isHost ? session.meeting_start_url : session.meeting_join_url;
               const buttonText = isHost ? 'Start Meeting' : 'Join Meeting';
               const buttonVariant = isHost ? 'success' : 'primary';
-              const isGated = !session.create_zoom_meeting;
 
               return (
                 <div className="d-flex flex-column" style={{ gap: 4 }}>
                   <div>
-                    {session.create_zoom_meeting
-                      ? <Badge variant="success">Public Zoom</Badge>
-                      : <Badge variant="warning">Gated Zoom</Badge>}
+                    <ScopeBadge scope={session.create_zoom_meeting ? 'public' : 'gated'} />
                   </div>
                   <Button
                     variant={buttonVariant}
@@ -278,16 +250,6 @@ const SessionList = ({
                   >
                     {buttonText}
                   </Button>
-                  {isInstructor && isGated && (
-                    <Button
-                      variant="outline-success"
-                      size="sm"
-                      onClick={() => handlePromote(session)}
-                      style={{ width: 'fit-content' }}
-                    >
-                      Promote to public
-                    </Button>
-                  )}
                   {session.meeting_password && (
                   <small className="text-muted">
                     Password: <code>{session.meeting_password}</code>

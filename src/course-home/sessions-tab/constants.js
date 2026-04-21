@@ -56,8 +56,8 @@ export const REQUEST_STATUS_VARIANTS = {
 };
 
 // Role strings returned by calendar-sessions API (user_role field).
+// Product rule: this system has admins only — anyone else is a learner.
 export const USER_ROLE = {
   ADMIN: 'admin',
-  INSTRUCTOR: 'instructor',
   LEARNER: 'learner',
 };

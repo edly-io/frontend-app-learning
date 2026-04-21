@@ -14,6 +14,7 @@ import {
 import { bucketSessionsByDay, getStatusVariant } from '../utils';
 import { SESSION_STATUS_LABELS } from '../constants';
 import RequestStatusBadge from '../RequestStatusBadge';
+import ScopeBadge from '../ScopeBadge';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -133,7 +134,7 @@ const formatInstructors = (session) => {
 // any time, and it closes cleanly when Edit/Delete opens another modal.
 const SessionPopover = ({
   session, children, isOpen, onOpenChange, onEdit, onDelete, canManageSessions = false,
-  isLearner = false, isHost = false, learnerRequest = null, onRequestSession, onPromoteSession,
+  isLearner = false, learnerRequest = null, onRequestSession,
 }) => {
   const statusLabel = SESSION_STATUS_LABELS[session.status] || session.status;
   const instructorDisplay = formatInstructors(session);
@@ -141,7 +142,6 @@ const SessionPopover = ({
   // window-level studentRequestMap for backward compatibility with older payloads.
   const myRequest = session.my_request ?? learnerRequest;
   const hasMeeting = Boolean(session.meeting_id || session.meeting_join_url);
-  const isGated = hasMeeting && !session.create_zoom_meeting;
   const learnerCanJoin = (
     session.create_zoom_meeting
     || (myRequest?.status === 'approved' && myRequest?.request_type === 'remote_zoom')
@@ -169,12 +169,6 @@ const SessionPopover = ({
     e.stopPropagation();
     onOpenChange(false);
     onRequestSession?.(session);
-  };
-
-  const handlePromote = (e) => {
-    e.stopPropagation();
-    onOpenChange(false);
-    onPromoteSession?.(session);
   };
 
   const popover = (
@@ -219,11 +213,11 @@ const SessionPopover = ({
         </div>
         <div className="mb-2 d-flex" style={{ gap: 4, flexWrap: 'wrap' }}>
           <Badge variant={getStatusVariant(session.status)}>{statusLabel}</Badge>
-          {/* Admin-only meeting scope hint. Public = scenario 1, Gated = scenario 2. */}
-          {canManageSessions && hasMeeting && (
-            session.create_zoom_meeting
-              ? <Badge variant="success">Public Zoom</Badge>
-              : <Badge variant="warning">Gated Zoom</Badge>
+          {/* Admin-only meeting scope hint. */}
+          {canManageSessions && (
+            hasMeeting
+              ? <ScopeBadge scope={session.create_zoom_meeting ? 'public' : 'gated'} />
+              : <ScopeBadge scope="in_person" />
           )}
         </div>
         {session.status === 'scheduled' && (
@@ -242,15 +236,10 @@ const SessionPopover = ({
                 >
                   Delete
                 </Button>
-                {isGated && onPromoteSession && (
-                  <Button variant="outline-success" size="sm" onClick={handlePromote}>
-                    Promote to public
-                  </Button>
-                )}
               </>
             )}
             {/* Host (admin/instructor) → Start with meeting_start_url. */}
-            {isHost && session.meeting_start_url && (
+            {canManageSessions && session.meeting_start_url && (
               <Button
                 variant="success"
                 size="sm"
@@ -262,7 +251,7 @@ const SessionPopover = ({
             )}
             {/* Join button — admins always when URL present; learners only when scope allows. */}
             {(() => {
-              if (isHost && session.meeting_start_url) { return null; }
+              if (canManageSessions && session.meeting_start_url) { return null; }
               if (isLearner && !learnerCanJoin) { return null; }
               const joinUrl = session.meeting_join_url || myRequest?.meeting_join_url;
               return joinUrl ? (
@@ -313,7 +302,7 @@ const SessionPopover = ({
 
 const DayPopover = ({
   date, sessions, children, isOpen, onOpenChange, onEdit, onDelete, canManageSessions = false,
-  isLearner = false, isHost = false, studentRequestMap, onRequestSession, onPromoteSession,
+  isLearner = false, studentRequestMap, onRequestSession,
 }) => {
   const dateLabel = date.toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
@@ -354,12 +343,6 @@ const DayPopover = ({
     onRequestSession?.(session);
   };
 
-  const handlePromote = (e, session) => {
-    e.stopPropagation();
-    onOpenChange(false);
-    onPromoteSession?.(session);
-  };
-
   const popover = (
     <Popover
       id={`day-popover-${toDateKey(date)}`}
@@ -398,7 +381,6 @@ const DayPopover = ({
             const instructorDisplay = formatInstructors(session);
             const myRequest = session.my_request ?? studentRequestMap?.get(session.id);
             const hasMeeting = Boolean(session.meeting_id || session.meeting_join_url);
-            const isGated = hasMeeting && !session.create_zoom_meeting;
             const learnerCanJoin = (
               session.create_zoom_meeting
               || (myRequest?.status === 'approved' && myRequest?.request_type === 'remote_zoom')
@@ -438,11 +420,11 @@ const DayPopover = ({
                   )}
                   <div style={{ fontSize: 12, color: '#6c757d' }}>{formatTimeRange(session)}</div>
                   {/* Admin-only Zoom scope hint. */}
-                  {canManageSessions && hasMeeting && (
+                  {canManageSessions && (
                     <div className="mt-1">
-                      {session.create_zoom_meeting
-                        ? <Badge variant="success">Public Zoom</Badge>
-                        : <Badge variant="warning">Gated Zoom</Badge>}
+                      {hasMeeting
+                        ? <ScopeBadge scope={session.create_zoom_meeting ? 'public' : 'gated'} />
+                        : <ScopeBadge scope="in_person" />}
                     </div>
                   )}
                   {session.status === 'scheduled' && (
@@ -466,19 +448,10 @@ const DayPopover = ({
                         >
                           Delete
                         </Button>
-                        {isGated && onPromoteSession && (
-                          <Button
-                            variant="outline-success"
-                            size="sm"
-                            onClick={(e) => handlePromote(e, session)}
-                          >
-                            Promote
-                          </Button>
-                        )}
                       </>
                     )}
                     {/* Host → Start with meeting_start_url. */}
-                    {isHost && session.meeting_start_url && (
+                    {canManageSessions && session.meeting_start_url && (
                       <Button
                         variant="success"
                         size="sm"
@@ -490,7 +463,7 @@ const DayPopover = ({
                     )}
                     {/* Join — admins always when URL present; learners only when scope allows. */}
                     {(() => {
-                      if (isHost && session.meeting_start_url) { return null; }
+                      if (canManageSessions && session.meeting_start_url) { return null; }
                       if (isLearner && !learnerCanJoin) { return null; }
                       const joinUrl = session.meeting_join_url || myRequest?.meeting_join_url;
                       return joinUrl ? (
@@ -575,7 +548,7 @@ const DayCell = ({
   openPopoverId, setOpenPopoverId,
   openDayKey, setOpenDayKey,
   isOutsideMonth = false, cellMinHeight = 110, canManageSessions = false,
-  isLearner = false, isHost = false, studentRequestMap, onRequestSession, onPromoteSession,
+  isLearner = false, studentRequestMap, onRequestSession,
 }) => {
   const dateKey = toDateKey(date);
   const today = toDateKey(new Date());
@@ -654,10 +627,8 @@ const DayCell = ({
           onDelete={onDeleteSession}
           canManageSessions={canManageSessions}
           isLearner={isLearner}
-          isHost={isHost}
           learnerRequest={studentRequestMap?.get(session.id) || null}
           onRequestSession={onRequestSession}
-          onPromoteSession={onPromoteSession}
         >
           <button
             type="button"
@@ -721,10 +692,8 @@ const DayCell = ({
       onDelete={onDeleteSession}
       canManageSessions={canManageSessions}
       isLearner={isLearner}
-      isHost={isHost}
       studentRequestMap={studentRequestMap}
       onRequestSession={onRequestSession}
-      onPromoteSession={onPromoteSession}
     >
       {cellContent}
     </DayPopover>
@@ -737,7 +706,7 @@ const MonthGrid = ({
   currentDate, sessionMap, onEditSession, onDeleteSession,
   openPopoverId, setOpenPopoverId,
   openDayKey, setOpenDayKey, canManageSessions = false,
-  isLearner = false, isHost = false, studentRequestMap, onRequestSession, onPromoteSession,
+  isLearner = false, studentRequestMap, onRequestSession,
 }) => {
   const days = getMonthGridDays(currentDate);
   const currentMonth = currentDate.getMonth();
@@ -792,10 +761,8 @@ const MonthGrid = ({
             cellMinHeight={110}
             canManageSessions={canManageSessions}
             isLearner={isLearner}
-            isHost={isHost}
             studentRequestMap={studentRequestMap}
             onRequestSession={onRequestSession}
-            onPromoteSession={onPromoteSession}
           />
         ))}
       </div>
@@ -885,7 +852,7 @@ const layoutSessions = (sessions) => {
 const TimeGrid = ({
   days, sessionMap, onEditSession, onDeleteSession,
   openPopoverId, setOpenPopoverId, canManageSessions = false,
-  isLearner = false, isHost = false, studentRequestMap, onRequestSession, onPromoteSession,
+  isLearner = false, studentRequestMap, onRequestSession,
 }) => {
   const todayKey = toDateKey(new Date());
 
@@ -1004,10 +971,8 @@ const TimeGrid = ({
                       onDelete={onDeleteSession}
                       canManageSessions={canManageSessions}
                       isLearner={isLearner}
-                      isHost={isHost}
                       learnerRequest={studentRequestMap?.get(session.id) || null}
                       onRequestSession={onRequestSession}
-                      onPromoteSession={onPromoteSession}
                     >
                       <button
                         type="button"
@@ -1079,7 +1044,7 @@ const TimeGrid = ({
 const WeekGrid = ({
   currentDate, sessionMap, onEditSession, onDeleteSession,
   openPopoverId, setOpenPopoverId, canManageSessions = false,
-  isLearner = false, isHost = false, studentRequestMap, onRequestSession, onPromoteSession,
+  isLearner = false, studentRequestMap, onRequestSession,
 }) => (
   <TimeGrid
     days={getWeekDays(currentDate)}
@@ -1090,10 +1055,8 @@ const WeekGrid = ({
     setOpenPopoverId={setOpenPopoverId}
     canManageSessions={canManageSessions}
     isLearner={isLearner}
-    isHost={isHost}
     studentRequestMap={studentRequestMap}
     onRequestSession={onRequestSession}
-    onPromoteSession={onPromoteSession}
   />
 );
 
@@ -1102,7 +1065,7 @@ const WeekGrid = ({
 const DayView = ({
   currentDate, sessionMap, onEditSession, onDeleteSession,
   openPopoverId, setOpenPopoverId, canManageSessions = false,
-  isLearner = false, isHost = false, studentRequestMap, onRequestSession, onPromoteSession,
+  isLearner = false, studentRequestMap, onRequestSession,
 }) => (
   <TimeGrid
     days={[currentDate]}
@@ -1113,10 +1076,8 @@ const DayView = ({
     setOpenPopoverId={setOpenPopoverId}
     canManageSessions={canManageSessions}
     isLearner={isLearner}
-    isHost={isHost}
     studentRequestMap={studentRequestMap}
     onRequestSession={onRequestSession}
-    onPromoteSession={onPromoteSession}
   />
 );
 
@@ -1125,7 +1086,7 @@ const DayView = ({
 const CalendarView = ({
   sessions, view, currentDate, onViewChange, onNavigate, onGoToToday,
   onScheduleNew, onEditSession, onDeleteSession, loading = false, canManageSessions = false,
-  isLearner = false, isHost = false, studentRequestMap, onRequestSession, onPromoteSession,
+  isLearner = false, studentRequestMap, onRequestSession,
 }) => {
   // Only one popover open at a time; null = none. Chip clicks and outside
   // clicks flip this; Edit/Delete actions also reset it before bubbling up.
@@ -1244,10 +1205,8 @@ const CalendarView = ({
           setOpenDayKey={setOpenDayKey}
           canManageSessions={canManageSessions}
           isLearner={isLearner}
-          isHost={isHost}
           studentRequestMap={studentRequestMap}
           onRequestSession={onRequestSession}
-          onPromoteSession={onPromoteSession}
         />
         )}
         {view === VIEWS.WEEK && (
@@ -1260,10 +1219,8 @@ const CalendarView = ({
           setOpenPopoverId={setOpenPopoverId}
           canManageSessions={canManageSessions}
           isLearner={isLearner}
-          isHost={isHost}
           studentRequestMap={studentRequestMap}
           onRequestSession={onRequestSession}
-          onPromoteSession={onPromoteSession}
         />
         )}
         {view === VIEWS.DAY && (
@@ -1276,10 +1233,8 @@ const CalendarView = ({
           setOpenPopoverId={setOpenPopoverId}
           canManageSessions={canManageSessions}
           isLearner={isLearner}
-          isHost={isHost}
           studentRequestMap={studentRequestMap}
           onRequestSession={onRequestSession}
-          onPromoteSession={onPromoteSession}
         />
         )}
       </div>
