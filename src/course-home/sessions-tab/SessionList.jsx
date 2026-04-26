@@ -7,20 +7,24 @@ import {
 } from '@openedx/paragon/icons';
 import { getSessions, deleteSession } from './api';
 import { formatDateTime, getStatusVariant, extractApiError } from './utils';
-import { SESSION_STATUS_LABELS } from './constants';
+import { SESSION_STATUS_LABELS, USER_ROLE } from './constants';
 import ScopeBadge from './ScopeBadge';
+import InstructingBadge from './InstructingBadge';
 
 // Defined outside SessionList so React tracks it as a stable component —
 // required for hooks (useState) to work inside a DataTable Cell renderer.
 const TitleCell = ({ row }) => {
   const [expanded, setExpanded] = useState(false);
-  const { title, description } = row.original;
+  const { title, description, user_role: userRole } = row.original;
   const MAX_LEN = 120;
   const isLong = description && description.length > MAX_LEN;
 
   return (
     <div>
-      <strong>{title}</strong>
+      <div className="d-flex align-items-center" style={{ gap: 6, flexWrap: 'wrap' }}>
+        <strong>{title}</strong>
+        {userRole === USER_ROLE.INSTRUCTOR && <InstructingBadge />}
+      </div>
       {description && (
         <p className="small text-muted mb-0 mt-1">
           {(!isLong || expanded) ? description : `${description.slice(0, MAX_LEN)}…`}

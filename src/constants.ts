@@ -30,7 +30,6 @@ export const ROUTES = {
   DASHBOARD: 'dashboard',
   ENTERPRISE_LEARNER_DASHBOARD: 'enterprise-learner-dashboard',
   CONSENT: 'consent',
-  CALENDAR: '/sessions/calendar',
 } as const satisfies Readonly<{ [k: string]: string }>;
 
 export const REDIRECT_MODES = {

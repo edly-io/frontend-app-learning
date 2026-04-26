@@ -11,7 +11,8 @@ import { Routes, Route } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { fetchDiscussionTab, fetchLiveTab } from './course-home/data/thunks';
 import DiscussionTab from './course-home/discussion-tab/DiscussionTab';
-import SessionsTab, { CalendarPage, SessionsListPage, SessionDetailPage } from './course-home/sessions-tab';
+import SessionsTab, { SessionsListPage, SessionDetailPage } from './course-home/sessions-tab';
+import { sessionsAdminRoutes } from './sessions-admin/routes';
 import {
   fetchAttendanceTab, fetchDatesTab, fetchOutlineTab, fetchProgressTab,
 } from './course-home/data';
@@ -57,7 +58,7 @@ subscribe(APP_READY, () => {
                   <Route path="*" element={<PageWrap><PageNotFound /></PageWrap>} />
                   <Route path={ROUTES.UNSUBSCRIBE} element={<PageWrap><GoalUnsubscribe /></PageWrap>} />
                   <Route path={ROUTES.REDIRECT} element={<PageWrap><CoursewareRedirectLandingPage /></PageWrap>} />
-                  <Route path={ROUTES.CALENDAR} element={<PageWrap><CalendarPage /></PageWrap>} />
+                  {sessionsAdminRoutes}
                   <Route
                     path={ROUTES.PREFERENCES_UNSUBSCRIBE}
                     element={

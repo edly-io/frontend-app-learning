@@ -4,7 +4,6 @@ import React, {
 import {
   Container, Spinner, Alert, Toast, StandardModal, Button,
 } from '@openedx/paragon';
-import { FooterSlot } from '@edx/frontend-component-footer';
 import {
   getCalendarSessions, deleteSession, getMySessionRequests,
 } from '../api';
@@ -12,7 +11,6 @@ import { extractApiError } from '../utils';
 import { USER_ROLE } from '../constants';
 import ScheduleMeetingModal from '../ScheduleMeetingModal';
 import SessionRequestModal from '../SessionRequestModal';
-import HeaderSlot from '../../../plugin-slots/HeaderSlot';
 import CalendarView, { getMonthGridDays, getWeekDays } from './CalendarView';
 
 const VIEWS = { MONTH: 'month', WEEK: 'week', DAY: 'day' };
@@ -222,7 +220,6 @@ const CalendarPage = () => {
 
     return (
       <Container className="py-4">
-        <h2 className="mb-4">My Sessions Calendar</h2>
         <CalendarView
           sessions={sessions}
           view={view}
@@ -245,11 +242,9 @@ const CalendarPage = () => {
 
   return (
     <>
-      <HeaderSlot />
       <main id="main-content" className="d-flex flex-column flex-grow-1">
         {renderContent()}
       </main>
-      <FooterSlot />
 
       {/* Create / Edit modal — only for admins */}
       {canManageSessions && (

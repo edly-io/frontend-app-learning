@@ -12,9 +12,10 @@ import {
   ChevronLeft, ChevronRight, Launch, Add, EditOutline, DeleteOutline,
 } from '@openedx/paragon/icons';
 import { bucketSessionsByDay, getStatusVariant } from '../utils';
-import { SESSION_STATUS_LABELS } from '../constants';
+import { SESSION_STATUS_LABELS, USER_ROLE } from '../constants';
 import RequestStatusBadge from '../RequestStatusBadge';
 import ScopeBadge from '../ScopeBadge';
+import InstructingBadge from '../InstructingBadge';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -219,6 +220,7 @@ const SessionPopover = ({
               ? <ScopeBadge scope={session.create_zoom_meeting ? 'public' : 'gated'} />
               : <ScopeBadge scope="in_person" />
           )}
+          {session.user_role === USER_ROLE.INSTRUCTOR && <InstructingBadge />}
         </div>
         {session.status === 'scheduled' && (
           <div className="d-flex align-items-center" style={{ gap: 6, flexWrap: 'wrap' }}>
@@ -421,11 +423,14 @@ const DayPopover = ({
                   <div style={{ fontSize: 12, color: '#6c757d' }}>{formatTimeRange(session)}</div>
                   {/* Admin-only Zoom scope hint. */}
                   {canManageSessions && (
-                    <div className="mt-1">
+                    <div className="mt-1 d-flex" style={{ gap: 4, flexWrap: 'wrap' }}>
                       {hasMeeting
                         ? <ScopeBadge scope={session.create_zoom_meeting ? 'public' : 'gated'} />
                         : <ScopeBadge scope="in_person" />}
                     </div>
+                  )}
+                  {session.user_role === USER_ROLE.INSTRUCTOR && (
+                    <div className="mt-1"><InstructingBadge /></div>
                   )}
                   {session.status === 'scheduled' && (
                   <div className="mt-1 d-flex align-items-center" style={{ gap: 4, flexWrap: 'wrap' }}>
