@@ -6,7 +6,11 @@ import { CalendarPage } from '../course-home/sessions-tab';
 import SessionsAdminLayout from './SessionsAdminLayout';
 import SessionsLanding from './SessionsLanding';
 import RequestsPage from './RequestsPage';
-import AttendancePage from './AttendancePage';
+import AttendancePage from './attendance/AttendancePage';
+import AttendanceIndexRedirect from './attendance/AttendanceIndexRedirect';
+import AdminSessionsList from './attendance/AdminSessionsList';
+import AttendanceRosterPage from './attendance/AttendanceRosterPage';
+import MyAttendanceView from './attendance/MyAttendanceView';
 
 /**
  * Route paths owned by the sessions-admin area. Importing from here keeps
@@ -47,6 +51,15 @@ export const sessionsAdminRoutes = (
     />
     <Route path={SESSIONS_CALENDAR_PATH} element={wrapInShell(CalendarPage)} />
     <Route path={SESSIONS_REQUESTS_PATH} element={wrapInShell(RequestsPage)} />
-    <Route path={SESSIONS_ATTENDANCE_PATH} element={wrapInShell(AttendancePage)} />
+    {/* Attendance tab is a layout route — children render inside the
+        AttendancePage shell's <Outlet />. Sub-paths follow the role-aware
+        pill nav: admin gets sessions/summary/by-session/by-learner; learner
+        gets only `me`. The index route role-redirects. */}
+    <Route path={SESSIONS_ATTENDANCE_PATH} element={wrapInShell(AttendancePage)}>
+      <Route index element={<AttendanceIndexRedirect />} />
+      <Route path="sessions" element={<AdminSessionsList />} />
+      <Route path="sessions/:sessionId" element={<AttendanceRosterPage />} />
+      <Route path="me" element={<MyAttendanceView />} />
+    </Route>
   </>
 );
