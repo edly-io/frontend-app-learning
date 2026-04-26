@@ -102,6 +102,10 @@ const CalendarPage = () => {
           const requests = await getMySessionRequests({
             startDate: start.toISOString(),
             endDate: end.toISOString(),
+            // Pull the full window in one shot — backend now paginates /me/
+            // (default 50). The calendar wants every visible request to render
+            // its session badge correctly. 200 is the backend max_page_size.
+            pageSize: 200,
           });
           if (cancelled) { return; }
           const list = Array.isArray(requests) ? requests : requests.results || [];

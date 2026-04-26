@@ -125,12 +125,16 @@ export const createSessionRequest = async ({ session, requestType, reason }) => 
  *
  * GET /fbr/api/attendance/v1/session-requests/
  */
-export const getSessionRequests = async ({ courseId, status, sessionId } = {}) => {
+export const getSessionRequests = async ({
+  courseId, status, sessionId, page, pageSize,
+} = {}) => {
   const client = getAuthenticatedHttpClient();
   const params = new URLSearchParams();
   if (courseId) { params.set('course_id', courseId); }
   if (status) { params.set('status', status); }
   if (sessionId) { params.set('session_id', sessionId); }
+  if (page) { params.set('page', String(page)); }
+  if (pageSize) { params.set('page_size', String(pageSize)); }
   const qs = params.toString();
   const url = `${getBaseUrl()}/session-requests/${qs ? `?${qs}` : ''}`;
   const { data } = await client.get(url);
@@ -144,11 +148,15 @@ export const getSessionRequests = async ({ courseId, status, sessionId } = {}) =
  *
  * GET /fbr/api/attendance/v1/session-requests/me/
  */
-export const getMySessionRequests = async ({ startDate, endDate } = {}) => {
+export const getMySessionRequests = async ({
+  startDate, endDate, page, pageSize,
+} = {}) => {
   const client = getAuthenticatedHttpClient();
   const params = new URLSearchParams();
   if (startDate) { params.set('start_date', startDate); }
   if (endDate) { params.set('end_date', endDate); }
+  if (page) { params.set('page', String(page)); }
+  if (pageSize) { params.set('page_size', String(pageSize)); }
   const qs = params.toString();
   const url = `${getBaseUrl()}/session-requests/me/${qs ? `?${qs}` : ''}`;
   const { data } = await client.get(url);

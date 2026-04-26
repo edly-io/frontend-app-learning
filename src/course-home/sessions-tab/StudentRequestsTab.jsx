@@ -33,30 +33,43 @@ import { formatDateTime, extractApiError } from './utils';
  * optional note, since learners benefit from knowing why the request was
  * denied.
  */
+const PAGE_SIZE = 25;
+
 const StudentRequestsTab = ({ courseId, onPendingCountChange }) => {
   const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [count, setCount] = useState(0);
+  const [pageIndex, setPageIndex] = useState(0);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState('');
   const [actioningId, setActioningId] = useState(null);
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectNote, setRejectNote] = useState('');
 
-  const fetchRequests = useCallback(async () => {
-    setLoading(true);
+  // DataTable invokes `fetchData` on mount and whenever the page changes.
+  // Backend response is `{count, results}`; legacy non-paginated callers
+  // (per-course tab pre-pagination) may still see a flat array.
+  const fetchData = useCallback(async ({ pageIndex: nextIndex } = {}) => {
+    const targetIndex = nextIndex ?? 0;
     setError('');
     try {
-      const data = await getSessionRequests(courseId ? { courseId } : {});
-      // Response is either a paginated object or a list depending on backend
-      // pagination — normalise to a flat array.
-      setRequests(Array.isArray(data) ? data : data.results || []);
+      const data = await getSessionRequests({
+        ...(courseId ? { courseId } : {}),
+        page: targetIndex + 1,
+        pageSize: PAGE_SIZE,
+      });
+      const results = Array.isArray(data) ? data : data.results ?? [];
+      const total = Array.isArray(data) ? data.length : data.count ?? results.length;
+      setRequests(results);
+      setCount(total);
+      setPageIndex(targetIndex);
     } catch (err) {
       setError(extractApiError(err, 'Failed to load requests'));
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   }, [courseId]);
 
-  useEffect(() => { fetchRequests(); }, [fetchRequests]);
+  useEffect(() => { fetchData({ pageIndex: 0 }); }, [fetchData]);
 
   // Bubble up the pending count so the surrounding tab nav can badge the tab.
   useEffect(() => {
@@ -176,7 +189,7 @@ const StudentRequestsTab = ({ courseId, onPendingCountChange }) => {
   ], [actioningId]);
   /* eslint-enable react/no-unstable-nested-components, react/prop-types */
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <Container className="py-5 text-center">
         <Spinner animation="border" variant="primary" />
@@ -193,16 +206,22 @@ const StudentRequestsTab = ({ courseId, onPendingCountChange }) => {
         </Alert>
       )}
 
-      {requests.length === 0 ? (
+      {count === 0 ? (
         <Alert variant="info">No student requests yet.</Alert>
       ) : (
         <DataTable
+          isPaginated
+          manualPagination
+          fetchData={fetchData}
+          pageCount={Math.max(1, Math.ceil(count / PAGE_SIZE))}
+          itemCount={count}
           data={requests}
           columns={columns}
-          itemCount={requests.length}
+          initialState={{ pageIndex, pageSize: PAGE_SIZE }}
         >
           <DataTable.Table />
           <DataTable.EmptyTable content="No requests" />
+          <DataTable.TableFooter />
         </DataTable>
       )}
 
