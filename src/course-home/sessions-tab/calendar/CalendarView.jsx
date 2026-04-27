@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
 import {
   Button,
@@ -95,6 +96,12 @@ const statusColors = {
   in_progress: '#0a58ca',
   completed: '#198754',
   cancelled: '#dc3545',
+};
+
+const getDayHeaderColor = (isToday, isWeekend) => {
+  if (isToday) { return '#4f46e5'; }
+  if (isWeekend) { return '#adb5bd'; }
+  return '#6c757d';
 };
 
 // Weekend = Saturday (6) or Sunday (0) in JS getDay()
@@ -602,6 +609,11 @@ const DayCell = ({
     });
   };
 
+  // Cell is interactive (Enter/Space toggles the day popover) but contains
+  // its own button children (session chips, "+N more"), so we can't use a
+  // real <button> wrapper — nested buttons are invalid HTML. The role +
+  // tabIndex + onKeyDown trio gives the same affordances on a div.
+  /* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-tabindex */
   const cellContent = (
     <div
       role={hasSessions ? 'button' : undefined}
@@ -715,6 +727,7 @@ const DayCell = ({
       )}
     </div>
   );
+  /* eslint-enable jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-tabindex */
 
   if (!hasSessions) { return cellContent; }
 
@@ -920,7 +933,7 @@ const TimeGrid = ({
                 padding: '8px 4px',
                 fontSize: 12,
                 fontWeight: 600,
-                color: isToday ? '#4f46e5' : isWeekend ? '#adb5bd' : '#6c757d',
+                color: getDayHeaderColor(isToday, isWeekend),
                 borderLeft: '1px solid #dee2e6',
               }}
             >
@@ -1291,6 +1304,235 @@ const CalendarView = ({
 
     </div>
   );
+};
+
+// ─── PropTypes ───────────────────────────────────────────────────────────────
+
+const requestShape = PropTypes.shape({
+  status: PropTypes.string,
+  request_type: PropTypes.string,
+  meeting_join_url: PropTypes.string,
+});
+
+const sessionShape = PropTypes.shape({
+  id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  title: PropTypes.string,
+  course_id: PropTypes.string,
+  course_name: PropTypes.string,
+  status: PropTypes.string,
+  scheduled_start_time: PropTypes.string,
+  meeting_id: PropTypes.string,
+  meeting_join_url: PropTypes.string,
+  meeting_start_url: PropTypes.string,
+  create_zoom_meeting: PropTypes.bool,
+  user_role: PropTypes.string,
+  my_request: requestShape,
+});
+
+SessionPopover.propTypes = {
+  session: sessionShape.isRequired,
+  children: PropTypes.node.isRequired,
+  isOpen: PropTypes.bool.isRequired,
+  onOpenChange: PropTypes.func.isRequired,
+  onEdit: PropTypes.func,
+  onDelete: PropTypes.func,
+  onCancel: PropTypes.func,
+  canManageSessions: PropTypes.bool,
+  isLearner: PropTypes.bool,
+  learnerRequest: requestShape,
+  onRequestSession: PropTypes.func,
+};
+SessionPopover.defaultProps = {
+  onEdit: () => {},
+  onDelete: () => {},
+  onCancel: () => {},
+  canManageSessions: false,
+  isLearner: false,
+  learnerRequest: null,
+  onRequestSession: () => {},
+};
+
+DayPopover.propTypes = {
+  date: PropTypes.instanceOf(Date).isRequired,
+  sessions: PropTypes.arrayOf(sessionShape).isRequired,
+  children: PropTypes.node.isRequired,
+  isOpen: PropTypes.bool.isRequired,
+  onOpenChange: PropTypes.func.isRequired,
+  onEdit: PropTypes.func,
+  onDelete: PropTypes.func,
+  onCancel: PropTypes.func,
+  canManageSessions: PropTypes.bool,
+  isLearner: PropTypes.bool,
+  studentRequestMap: PropTypes.instanceOf(Map),
+  onRequestSession: PropTypes.func,
+};
+DayPopover.defaultProps = {
+  onEdit: () => {},
+  onDelete: () => {},
+  onCancel: () => {},
+  canManageSessions: false,
+  isLearner: false,
+  studentRequestMap: null,
+  onRequestSession: () => {},
+};
+
+DayCell.propTypes = {
+  date: PropTypes.instanceOf(Date).isRequired,
+  sessions: PropTypes.arrayOf(sessionShape),
+  onEditSession: PropTypes.func,
+  onDeleteSession: PropTypes.func,
+  onCancelSession: PropTypes.func,
+  openPopoverId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  setOpenPopoverId: PropTypes.func.isRequired,
+  openDayKey: PropTypes.string,
+  setOpenDayKey: PropTypes.func.isRequired,
+  isOutsideMonth: PropTypes.bool,
+  cellMinHeight: PropTypes.number,
+  canManageSessions: PropTypes.bool,
+  isLearner: PropTypes.bool,
+  studentRequestMap: PropTypes.instanceOf(Map),
+  onRequestSession: PropTypes.func,
+};
+DayCell.defaultProps = {
+  sessions: [],
+  onEditSession: () => {},
+  onDeleteSession: () => {},
+  onCancelSession: () => {},
+  openPopoverId: null,
+  openDayKey: null,
+  isOutsideMonth: false,
+  cellMinHeight: 110,
+  canManageSessions: false,
+  isLearner: false,
+  studentRequestMap: null,
+  onRequestSession: () => {},
+};
+
+MonthGrid.propTypes = {
+  currentDate: PropTypes.instanceOf(Date).isRequired,
+  sessionMap: PropTypes.instanceOf(Map).isRequired,
+  onEditSession: PropTypes.func,
+  onDeleteSession: PropTypes.func,
+  onCancelSession: PropTypes.func,
+  openPopoverId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  setOpenPopoverId: PropTypes.func.isRequired,
+  openDayKey: PropTypes.string,
+  setOpenDayKey: PropTypes.func.isRequired,
+  canManageSessions: PropTypes.bool,
+  isLearner: PropTypes.bool,
+  studentRequestMap: PropTypes.instanceOf(Map),
+  onRequestSession: PropTypes.func,
+};
+MonthGrid.defaultProps = {
+  onEditSession: () => {},
+  onDeleteSession: () => {},
+  onCancelSession: () => {},
+  openPopoverId: null,
+  openDayKey: null,
+  canManageSessions: false,
+  isLearner: false,
+  studentRequestMap: null,
+  onRequestSession: () => {},
+};
+
+TimeGrid.propTypes = {
+  days: PropTypes.arrayOf(PropTypes.instanceOf(Date)).isRequired,
+  sessionMap: PropTypes.instanceOf(Map).isRequired,
+  onEditSession: PropTypes.func,
+  onDeleteSession: PropTypes.func,
+  onCancelSession: PropTypes.func,
+  openPopoverId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  setOpenPopoverId: PropTypes.func.isRequired,
+  canManageSessions: PropTypes.bool,
+  isLearner: PropTypes.bool,
+  studentRequestMap: PropTypes.instanceOf(Map),
+  onRequestSession: PropTypes.func,
+};
+TimeGrid.defaultProps = {
+  onEditSession: () => {},
+  onDeleteSession: () => {},
+  onCancelSession: () => {},
+  openPopoverId: null,
+  canManageSessions: false,
+  isLearner: false,
+  studentRequestMap: null,
+  onRequestSession: () => {},
+};
+
+WeekGrid.propTypes = {
+  currentDate: PropTypes.instanceOf(Date).isRequired,
+  sessionMap: PropTypes.instanceOf(Map).isRequired,
+  onEditSession: PropTypes.func,
+  onDeleteSession: PropTypes.func,
+  onCancelSession: PropTypes.func,
+  openPopoverId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  setOpenPopoverId: PropTypes.func.isRequired,
+  canManageSessions: PropTypes.bool,
+  isLearner: PropTypes.bool,
+  studentRequestMap: PropTypes.instanceOf(Map),
+  onRequestSession: PropTypes.func,
+};
+WeekGrid.defaultProps = {
+  onEditSession: () => {},
+  onDeleteSession: () => {},
+  onCancelSession: () => {},
+  openPopoverId: null,
+  canManageSessions: false,
+  isLearner: false,
+  studentRequestMap: null,
+  onRequestSession: () => {},
+};
+
+DayView.propTypes = {
+  currentDate: PropTypes.instanceOf(Date).isRequired,
+  sessionMap: PropTypes.instanceOf(Map).isRequired,
+  onEditSession: PropTypes.func,
+  onDeleteSession: PropTypes.func,
+  onCancelSession: PropTypes.func,
+  openPopoverId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  setOpenPopoverId: PropTypes.func.isRequired,
+  canManageSessions: PropTypes.bool,
+  isLearner: PropTypes.bool,
+  studentRequestMap: PropTypes.instanceOf(Map),
+  onRequestSession: PropTypes.func,
+};
+DayView.defaultProps = {
+  onEditSession: () => {},
+  onDeleteSession: () => {},
+  onCancelSession: () => {},
+  openPopoverId: null,
+  canManageSessions: false,
+  isLearner: false,
+  studentRequestMap: null,
+  onRequestSession: () => {},
+};
+
+CalendarView.propTypes = {
+  sessions: PropTypes.arrayOf(sessionShape).isRequired,
+  view: PropTypes.oneOf(['month', 'week', 'day']).isRequired,
+  currentDate: PropTypes.instanceOf(Date).isRequired,
+  onViewChange: PropTypes.func.isRequired,
+  onNavigate: PropTypes.func.isRequired,
+  onGoToToday: PropTypes.func.isRequired,
+  onScheduleNew: PropTypes.func.isRequired,
+  onEditSession: PropTypes.func,
+  onDeleteSession: PropTypes.func,
+  onCancelSession: PropTypes.func,
+  loading: PropTypes.bool,
+  canManageSessions: PropTypes.bool,
+  isLearner: PropTypes.bool,
+  studentRequestMap: PropTypes.instanceOf(Map),
+  onRequestSession: PropTypes.func,
+};
+CalendarView.defaultProps = {
+  onEditSession: () => {},
+  onDeleteSession: () => {},
+  onCancelSession: () => {},
+  loading: false,
+  canManageSessions: false,
+  isLearner: false,
+  studentRequestMap: null,
+  onRequestSession: () => {},
 };
 
 export default CalendarView;
