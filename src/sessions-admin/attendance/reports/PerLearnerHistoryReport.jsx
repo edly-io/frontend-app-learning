@@ -217,7 +217,12 @@ const PerLearnerHistoryReport = () => {
 
   return (
     <Container className="py-3">
-      <h3 className="mb-3">Per-Learner Attendance History</h3>
+      <h3 className="mb-1">Per-Learner Attendance History</h3>
+      <p className="text-muted mb-3">
+        Pick a course and a learner to see every session they were marked for, in
+        chronological order. Use this view to investigate a single learner&apos;s
+        attendance pattern across the term.
+      </p>
 
       {coursesError && (
         <Alert variant="danger" dismissible onClose={() => setCoursesError('')}>

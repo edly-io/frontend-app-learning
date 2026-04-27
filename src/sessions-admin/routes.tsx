@@ -3,6 +3,7 @@ import { Route, Navigate } from 'react-router-dom';
 import { PageWrap } from '@edx/frontend-platform/react';
 
 import { CalendarPage } from '../course-home/sessions-tab';
+import AuthGate from './AuthGate';
 import SessionsAdminLayout from './SessionsAdminLayout';
 import SessionsLanding from './SessionsLanding';
 import RequestsPage from './RequestsPage';
@@ -33,9 +34,11 @@ export const SESSIONS_ATTENDANCE_PATH = '/sessions/:programId/attendance';
 
 const wrapInShell = (Component: React.ComponentType) => (
   <PageWrap>
-    <SessionsAdminLayout>
-      <Component />
-    </SessionsAdminLayout>
+    <AuthGate>
+      <SessionsAdminLayout>
+        <Component />
+      </SessionsAdminLayout>
+    </AuthGate>
   </PageWrap>
 );
 
@@ -50,7 +53,7 @@ export const sessionsAdminRoutes = (
     />
     <Route
       path={SESSIONS_ROOT_PATH}
-      element={<PageWrap><SessionsLanding /></PageWrap>}
+      element={<PageWrap><AuthGate><SessionsLanding /></AuthGate></PageWrap>}
     />
     <Route path={SESSIONS_CALENDAR_PATH} element={wrapInShell(CalendarPage)} />
     <Route path={SESSIONS_REQUESTS_PATH} element={wrapInShell(RequestsPage)} />

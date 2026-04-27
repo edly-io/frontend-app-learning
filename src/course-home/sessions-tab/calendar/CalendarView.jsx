@@ -881,8 +881,8 @@ const MonthGrid = ({
 
 // ─── Time Grid (Week and Day views) ──────────────────────────────────────────
 
-const START_HOUR = 6; // 6 AM — earliest visible hour
-const END_HOUR = 21; // 9 PM — latest visible hour
+const START_HOUR = 0; // midnight — full 24-hour calendar
+const END_HOUR = 24; // 12 AM (next day, exclusive)
 const HOUR_HEIGHT = 60; // px per hour
 const TIME_COL_WIDTH = 52; // px — left time axis column
 const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
@@ -1272,6 +1272,9 @@ const CalendarView = ({
           onClick={() => navigate(-1)}
           size="sm"
         />
+        <Button variant="outline-primary" size="sm" onClick={goToToday}>
+          Today
+        </Button>
         <IconButton
           src={ChevronRight}
           iconAs={ChevronRight}
@@ -1283,10 +1286,6 @@ const CalendarView = ({
         <span style={{ fontWeight: 600, fontSize: 16, minWidth: 180 }}>
           {formatRangeLabel(view, currentDate)}
         </span>
-
-        <Button variant="outline-primary" size="sm" onClick={goToToday}>
-          Today
-        </Button>
 
         {/* View toggles + New session — pushed to the right */}
         <div className="ml-auto d-flex align-items-center" style={{ gap: 4 }}>

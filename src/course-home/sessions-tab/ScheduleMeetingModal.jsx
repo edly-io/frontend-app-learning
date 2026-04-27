@@ -23,17 +23,16 @@ const RECURRENCE_TYPES = [
   { value: 'monthly', label: 'month' },
 ];
 
-// Mon–Fri weekday buttons — Zoom weekday numbers (Mon=2 … Fri=6)
+// Sun–Sat weekday buttons — Zoom weekday numbers (Sun=1 … Sat=7)
 const ALL_WEEK_DAYS = [
+  { value: 1, letter: 'S', fullName: 'Sunday' },
   { value: 2, letter: 'M', fullName: 'Monday' },
   { value: 3, letter: 'T', fullName: 'Tuesday' },
   { value: 4, letter: 'W', fullName: 'Wednesday' },
   { value: 5, letter: 'T', fullName: 'Thursday' },
   { value: 6, letter: 'F', fullName: 'Friday' },
+  { value: 7, letter: 'S', fullName: 'Saturday' },
 ];
-
-// Alias (same set, used in summary helpers)
-const WEEK_DAYS = ALL_WEEK_DAYS.slice(1, 6);
 
 const MONTHLY_WEEKS = [
   { value: 1, label: 'First' },
@@ -58,11 +57,10 @@ const getMaxEndDate = (startDateString) => {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Returns the Zoom weekday number for a datetime-local string, clamped to Mon–Fri (2–6). */
+/** Returns the Zoom weekday number (1=Sun … 7=Sat) for a datetime-local string. */
 const getZoomWeekdayFromDate = (dateString) => {
   if (!dateString) { return 2; }
-  const day = new Date(dateString).getDay() + 1; // JS 0-based → Zoom 1-based (1=Sun … 7=Sat)
-  return Math.min(6, Math.max(2, day)); // Clamp to Mon–Fri (2–6)
+  return new Date(dateString).getDay() + 1; // JS 0-based → Zoom 1-based (1=Sun … 7=Sat)
 };
 
 /** Returns the day-of-month (1–31) from a datetime-local string. */
@@ -99,7 +97,7 @@ const buildSummary = ({
 
   let pattern = '';
   if (recurrenceType === 'daily') {
-    pattern = 'Every weekday (Mon–Fri)';
+    pattern = 'Every day';
   } else if (recurrenceType === 'weekly') {
     if (!weeklyDays.length) { return ''; }
     const names = weeklyDays.map(dayName).filter(Boolean);
@@ -395,6 +393,11 @@ const ScheduleMeetingModal = ({
       setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
       return false;
     }
+    if (new Date(formData.scheduled_start_time) <= new Date()) {
+      setError('Start time must be in the future');
+      setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+      return false;
+    }
     if (isRecurring) {
       if (recurrenceType === 'weekly' && (!weeklyDays || weeklyDays.length === 0)) {
         setError('Select at least one weekday');
@@ -450,7 +453,7 @@ const ScheduleMeetingModal = ({
       recurrence.type = 1;
     } else if (recurrenceType === 'weekly') {
       recurrence.type = 2;
-      recurrence.weekly_days = [...weeklyDays].filter((d) => d >= 2 && d <= 6).sort((a, b) => a - b).join(',');
+      recurrence.weekly_days = [...weeklyDays].filter((d) => d >= 1 && d <= 7).sort((a, b) => a - b).join(',');
     } else if (recurrenceType === 'monthly') {
       recurrence.type = 3;
       if (monthlyMode === 'day') {

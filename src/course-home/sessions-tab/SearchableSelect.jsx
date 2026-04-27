@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import {
-  Form, Spinner, Chip,
+  Form, Icon, Spinner, Chip,
 } from '@openedx/paragon';
-import { Close } from '@openedx/paragon/icons';
+import { Close, Search } from '@openedx/paragon/icons';
 
 /**
  * SearchableSelect
@@ -199,6 +199,7 @@ const SearchableSelect = ({
                 cursor: disabled ? 'not-allowed' : 'text',
               }}
             >
+              <Icon src={Search} className="text-muted" style={{ width: 18, height: 18, flexShrink: 0 }} />
               {selectedList.map((opt) => (
                 <Chip
                   key={opt.value}
@@ -235,6 +236,7 @@ const SearchableSelect = ({
           <Form.Control
             {...inputCommonProps}
             onFocus={() => { if (!value) { setIsOpen(true); } }}
+            leadingElement={<Icon src={Search} />}
           />
         )}
 

@@ -158,7 +158,12 @@ const CourseSummaryReport = () => {
 
   return (
     <Container className="py-3">
-      <h3 className="mb-3">Course Attendance Summary</h3>
+      <h3 className="mb-1">Course Attendance Summary</h3>
+      <p className="text-muted mb-3">
+        Aggregated attendance per learner for a course over a date range —
+        present / absent / late counts and overall attendance percentage. Sort
+        by percentage to surface the lowest attenders first.
+      </p>
 
       {coursesError && (
         <Alert variant="danger" dismissible onClose={() => setCoursesError('')}>

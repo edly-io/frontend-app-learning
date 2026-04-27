@@ -165,7 +165,12 @@ const PerSessionReport = () => {
 
   return (
     <Container className="py-3">
-      <h3 className="mb-3">Per-Session Attendance</h3>
+      <h3 className="mb-1">Per-Session Attendance</h3>
+      <p className="text-muted mb-3">
+        Pick a past session to see who attended, who was absent, and any override
+        notes the instructor added. Use this view to audit a single session in
+        detail.
+      </p>
 
       {sessionsError && (
         <Alert variant="danger" dismissible onClose={() => setSessionsError('')}>
