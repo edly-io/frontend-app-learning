@@ -1,9 +1,7 @@
 import React, { useState, useRef } from 'react';
 import PropTypes from 'prop-types';
-import { Link } from 'react-router-dom';
 import {
   Button,
-  Icon,
   IconButton,
   Badge,
   OverlayTrigger,
@@ -138,10 +136,50 @@ const formatInstructors = (session) => {
   return session.instructor_name || '';
 };
 
+// Inline button styled as a hyperlink — blue + always-underlined, with a
+// hover/focus state that darkens the colour. Used by both popovers for the
+// session-title click target. Inline styles can't express :hover, so hover
+// state is tracked via React.
+const TitleLink = ({ title, onClick, ariaLabel }) => {
+  const [active, setActive] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setActive(true)}
+      onMouseLeave={() => setActive(false)}
+      onFocus={() => setActive(true)}
+      onBlur={() => setActive(false)}
+      aria-label={ariaLabel}
+      style={{
+        background: 'none',
+        border: 'none',
+        padding: 0,
+        font: 'inherit',
+        cursor: 'pointer',
+        color: active ? '#0a58ca' : '#0d6efd',
+        textDecoration: 'underline',
+        textAlign: 'left',
+      }}
+    >
+      {title}
+    </button>
+  );
+};
+TitleLink.propTypes = {
+  title: PropTypes.string.isRequired,
+  onClick: PropTypes.func.isRequired,
+  ariaLabel: PropTypes.string,
+};
+TitleLink.defaultProps = {
+  ariaLabel: undefined,
+};
+
 // Controlled popover — only one popover can be open across the whole calendar at
 // any time, and it closes cleanly when Edit/Delete opens another modal.
 const SessionPopover = ({
-  session, children, isOpen, onOpenChange, onEdit, onDelete, onCancel, canManageSessions = false,
+  session, children, isOpen, onOpenChange, onEdit, onDelete, onCancel, onSessionDetail,
+  canManageSessions = false,
   isLearner = false, learnerRequest = null, onRequestSession,
 }) => {
   const statusLabel = SESSION_STATUS_LABELS[session.status] || session.status;
@@ -171,6 +209,12 @@ const SessionPopover = ({
     e.stopPropagation();
     onOpenChange(false);
     onCancel(session);
+  };
+
+  const handleViewDetail = (e) => {
+    e.stopPropagation();
+    onOpenChange(false);
+    onSessionDetail(session);
   };
 
   const handleJoin = (e, url) => {
@@ -205,14 +249,11 @@ const SessionPopover = ({
           padding: '8px 12px',
         }}
       >
-        <Link
-          to={`/course/${session.course_id}/sessions/${session.id}`}
-          className="text-primary d-inline-flex align-items-center"
-          style={{ gap: 4, textDecoration: 'none' }}
-        >
-          {session.title}
-          <Icon src={Launch} style={{ width: 14, height: 14 }} />
-        </Link>
+        <TitleLink
+          title={session.title}
+          onClick={handleViewDetail}
+          ariaLabel={`Show details for ${session.title}`}
+        />
       </Popover.Title>
       <Popover.Content style={{ fontSize: 13 }}>
         {session.course_name && (
@@ -227,13 +268,18 @@ const SessionPopover = ({
         </div>
         <div className="mb-2 d-flex" style={{ gap: 4, flexWrap: 'wrap' }}>
           <Badge variant={getStatusVariant(session.status)}>{statusLabel}</Badge>
-          {/* Admin-only meeting scope hint. */}
-          {canManageSessions && (
-            hasMeeting
-              ? <ScopeBadge scope={session.create_zoom_meeting ? 'public' : 'gated'} />
-              : <ScopeBadge scope="in_person" />
+          {/* Cancelled session = dead end; suppress scope/instructor noise. */}
+          {session.status !== 'cancelled' && (
+            <>
+              {/* Admin-only meeting scope hint. */}
+              {canManageSessions && (
+                hasMeeting
+                  ? <ScopeBadge scope={session.create_zoom_meeting ? 'public' : 'gated'} />
+                  : <ScopeBadge scope="in_person" />
+              )}
+              {session.user_role === USER_ROLE.INSTRUCTOR && <InstructingBadge />}
+            </>
           )}
-          {session.user_role === USER_ROLE.INSTRUCTOR && <InstructingBadge />}
         </div>
         {session.status === 'scheduled' && (
           <div className="d-flex align-items-center" style={{ gap: 6, flexWrap: 'wrap' }}>
@@ -325,7 +371,8 @@ const SessionPopover = ({
 // buttons — no nested SessionPopover needed.
 
 const DayPopover = ({
-  date, sessions, children, isOpen, onOpenChange, onEdit, onDelete, onCancel, canManageSessions = false,
+  date, sessions, children, isOpen, onOpenChange, onEdit, onDelete, onCancel, onSessionDetail,
+  canManageSessions = false,
   isLearner = false, studentRequestMap, onRequestSession,
 }) => {
   const dateLabel = date.toLocaleDateString('en-US', {
@@ -359,6 +406,12 @@ const DayPopover = ({
     e.stopPropagation();
     onOpenChange(false);
     onCancel(session);
+  };
+
+  const handleViewDetail = (e, session) => {
+    e.stopPropagation();
+    onOpenChange(false);
+    onSessionDetail(session);
   };
 
   const handleJoin = (e, url) => {
@@ -433,14 +486,11 @@ const DayPopover = ({
                 />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600 }}>
-                    <Link
-                      to={`/course/${session.course_id}/sessions/${session.id}`}
-                      className="text-primary d-inline-flex align-items-center"
-                      style={{ gap: 4, textDecoration: 'none' }}
-                    >
-                      {session.title}
-                      <Icon src={Launch} style={{ width: 14, height: 14 }} />
-                    </Link>
+                    <TitleLink
+                      title={session.title}
+                      onClick={(e) => handleViewDetail(e, session)}
+                      ariaLabel={`Show details for ${session.title}`}
+                    />
                   </div>
                   {session.course_name && (
                   <div className="text-muted" style={{ fontSize: 12 }}>{session.course_name}</div>
@@ -449,16 +499,21 @@ const DayPopover = ({
                   <div className="text-muted" style={{ fontSize: 12 }}>Instructor: {instructorDisplay}</div>
                   )}
                   <div style={{ fontSize: 12, color: '#6c757d' }}>{formatTimeRange(session)}</div>
-                  {/* Admin-only Zoom scope hint. */}
-                  {canManageSessions && (
-                    <div className="mt-1 d-flex" style={{ gap: 4, flexWrap: 'wrap' }}>
-                      {hasMeeting
-                        ? <ScopeBadge scope={session.create_zoom_meeting ? 'public' : 'gated'} />
-                        : <ScopeBadge scope="in_person" />}
-                    </div>
-                  )}
-                  {session.user_role === USER_ROLE.INSTRUCTOR && (
-                    <div className="mt-1"><InstructingBadge /></div>
+                  {/* Cancelled session = dead end; suppress scope/instructor noise. */}
+                  {session.status !== 'cancelled' && (
+                    <>
+                      {/* Admin-only Zoom scope hint. */}
+                      {canManageSessions && (
+                        <div className="mt-1 d-flex" style={{ gap: 4, flexWrap: 'wrap' }}>
+                          {hasMeeting
+                            ? <ScopeBadge scope={session.create_zoom_meeting ? 'public' : 'gated'} />
+                            : <ScopeBadge scope="in_person" />}
+                        </div>
+                      )}
+                      {session.user_role === USER_ROLE.INSTRUCTOR && (
+                        <div className="mt-1"><InstructingBadge /></div>
+                      )}
+                    </>
                   )}
                   {session.status === 'scheduled' && (
                   <div className="mt-1 d-flex align-items-center" style={{ gap: 4, flexWrap: 'wrap' }}>
@@ -586,7 +641,7 @@ const DayPopover = ({
 const MAX_CHIPS = 2;
 
 const DayCell = ({
-  date, sessions = [], onEditSession, onDeleteSession, onCancelSession,
+  date, sessions = [], onEditSession, onDeleteSession, onCancelSession, onSessionDetail,
   openPopoverId, setOpenPopoverId,
   openDayKey, setOpenDayKey,
   isOutsideMonth = false, cellMinHeight = 110, canManageSessions = false,
@@ -673,6 +728,7 @@ const DayCell = ({
           onEdit={onEditSession}
           onDelete={onDeleteSession}
           onCancel={onCancelSession}
+          onSessionDetail={onSessionDetail}
           canManageSessions={canManageSessions}
           isLearner={isLearner}
           learnerRequest={studentRequestMap?.get(session.id) || null}
@@ -740,6 +796,7 @@ const DayCell = ({
       onEdit={onEditSession}
       onDelete={onDeleteSession}
       onCancel={onCancelSession}
+      onSessionDetail={onSessionDetail}
       canManageSessions={canManageSessions}
       isLearner={isLearner}
       studentRequestMap={studentRequestMap}
@@ -753,7 +810,7 @@ const DayCell = ({
 // ─── MonthGrid ────────────────────────────────────────────────────────────────
 
 const MonthGrid = ({
-  currentDate, sessionMap, onEditSession, onDeleteSession, onCancelSession,
+  currentDate, sessionMap, onEditSession, onDeleteSession, onCancelSession, onSessionDetail,
   openPopoverId, setOpenPopoverId,
   openDayKey, setOpenDayKey, canManageSessions = false,
   isLearner = false, studentRequestMap, onRequestSession,
@@ -804,6 +861,7 @@ const MonthGrid = ({
             onEditSession={onEditSession}
             onDeleteSession={onDeleteSession}
             onCancelSession={onCancelSession}
+            onSessionDetail={onSessionDetail}
             openPopoverId={openPopoverId}
             setOpenPopoverId={setOpenPopoverId}
             openDayKey={openDayKey}
@@ -901,7 +959,7 @@ const layoutSessions = (sessions) => {
 };
 
 const TimeGrid = ({
-  days, sessionMap, onEditSession, onDeleteSession, onCancelSession,
+  days, sessionMap, onEditSession, onDeleteSession, onCancelSession, onSessionDetail,
   openPopoverId, setOpenPopoverId, canManageSessions = false,
   isLearner = false, studentRequestMap, onRequestSession,
 }) => {
@@ -1021,6 +1079,7 @@ const TimeGrid = ({
                       onEdit={onEditSession}
                       onDelete={onDeleteSession}
                       onCancel={onCancelSession}
+                      onSessionDetail={onSessionDetail}
                       canManageSessions={canManageSessions}
                       isLearner={isLearner}
                       learnerRequest={studentRequestMap?.get(session.id) || null}
@@ -1094,7 +1153,7 @@ const TimeGrid = ({
 // ─── WeekGrid ─────────────────────────────────────────────────────────────────
 
 const WeekGrid = ({
-  currentDate, sessionMap, onEditSession, onDeleteSession, onCancelSession,
+  currentDate, sessionMap, onEditSession, onDeleteSession, onCancelSession, onSessionDetail,
   openPopoverId, setOpenPopoverId, canManageSessions = false,
   isLearner = false, studentRequestMap, onRequestSession,
 }) => (
@@ -1104,6 +1163,7 @@ const WeekGrid = ({
     onEditSession={onEditSession}
     onDeleteSession={onDeleteSession}
     onCancelSession={onCancelSession}
+    onSessionDetail={onSessionDetail}
     openPopoverId={openPopoverId}
     setOpenPopoverId={setOpenPopoverId}
     canManageSessions={canManageSessions}
@@ -1116,7 +1176,7 @@ const WeekGrid = ({
 // ─── DayView ──────────────────────────────────────────────────────────────────
 
 const DayView = ({
-  currentDate, sessionMap, onEditSession, onDeleteSession, onCancelSession,
+  currentDate, sessionMap, onEditSession, onDeleteSession, onCancelSession, onSessionDetail,
   openPopoverId, setOpenPopoverId, canManageSessions = false,
   isLearner = false, studentRequestMap, onRequestSession,
 }) => (
@@ -1126,6 +1186,7 @@ const DayView = ({
     onEditSession={onEditSession}
     onDeleteSession={onDeleteSession}
     onCancelSession={onCancelSession}
+    onSessionDetail={onSessionDetail}
     openPopoverId={openPopoverId}
     setOpenPopoverId={setOpenPopoverId}
     canManageSessions={canManageSessions}
@@ -1139,7 +1200,8 @@ const DayView = ({
 
 const CalendarView = ({
   sessions, view, currentDate, onViewChange, onNavigate, onGoToToday,
-  onScheduleNew, onEditSession, onDeleteSession, onCancelSession, loading = false, canManageSessions = false,
+  onScheduleNew, onEditSession, onDeleteSession, onCancelSession, onSessionDetail,
+  loading = false, canManageSessions = false,
   isLearner = false, studentRequestMap, onRequestSession,
 }) => {
   // Only one popover open at a time; null = none. Chip clicks and outside
@@ -1185,6 +1247,12 @@ const CalendarView = ({
     setOpenPopoverId(null);
     setOpenDayKey(null);
     onCancelSession(session);
+  };
+
+  const handleViewSession = (session) => {
+    setOpenPopoverId(null);
+    setOpenDayKey(null);
+    onSessionDetail(session);
   };
 
   const handleScheduleNew = () => {
@@ -1260,6 +1328,7 @@ const CalendarView = ({
           onEditSession={handleEdit}
           onDeleteSession={handleDelete}
           onCancelSession={handleCancel}
+          onSessionDetail={handleViewSession}
           openPopoverId={openPopoverId}
           setOpenPopoverId={setOpenPopoverId}
           openDayKey={openDayKey}
@@ -1277,6 +1346,7 @@ const CalendarView = ({
           onEditSession={handleEdit}
           onDeleteSession={handleDelete}
           onCancelSession={handleCancel}
+          onSessionDetail={handleViewSession}
           openPopoverId={openPopoverId}
           setOpenPopoverId={setOpenPopoverId}
           canManageSessions={canManageSessions}
@@ -1292,6 +1362,7 @@ const CalendarView = ({
           onEditSession={handleEdit}
           onDeleteSession={handleDelete}
           onCancelSession={handleCancel}
+          onSessionDetail={handleViewSession}
           openPopoverId={openPopoverId}
           setOpenPopoverId={setOpenPopoverId}
           canManageSessions={canManageSessions}
@@ -1337,6 +1408,7 @@ SessionPopover.propTypes = {
   onEdit: PropTypes.func,
   onDelete: PropTypes.func,
   onCancel: PropTypes.func,
+  onSessionDetail: PropTypes.func,
   canManageSessions: PropTypes.bool,
   isLearner: PropTypes.bool,
   learnerRequest: requestShape,
@@ -1346,6 +1418,7 @@ SessionPopover.defaultProps = {
   onEdit: () => {},
   onDelete: () => {},
   onCancel: () => {},
+  onSessionDetail: () => {},
   canManageSessions: false,
   isLearner: false,
   learnerRequest: null,
@@ -1361,6 +1434,7 @@ DayPopover.propTypes = {
   onEdit: PropTypes.func,
   onDelete: PropTypes.func,
   onCancel: PropTypes.func,
+  onSessionDetail: PropTypes.func,
   canManageSessions: PropTypes.bool,
   isLearner: PropTypes.bool,
   studentRequestMap: PropTypes.instanceOf(Map),
@@ -1370,6 +1444,7 @@ DayPopover.defaultProps = {
   onEdit: () => {},
   onDelete: () => {},
   onCancel: () => {},
+  onSessionDetail: () => {},
   canManageSessions: false,
   isLearner: false,
   studentRequestMap: null,
@@ -1382,6 +1457,7 @@ DayCell.propTypes = {
   onEditSession: PropTypes.func,
   onDeleteSession: PropTypes.func,
   onCancelSession: PropTypes.func,
+  onSessionDetail: PropTypes.func,
   openPopoverId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   setOpenPopoverId: PropTypes.func.isRequired,
   openDayKey: PropTypes.string,
@@ -1398,6 +1474,7 @@ DayCell.defaultProps = {
   onEditSession: () => {},
   onDeleteSession: () => {},
   onCancelSession: () => {},
+  onSessionDetail: () => {},
   openPopoverId: null,
   openDayKey: null,
   isOutsideMonth: false,
@@ -1414,6 +1491,7 @@ MonthGrid.propTypes = {
   onEditSession: PropTypes.func,
   onDeleteSession: PropTypes.func,
   onCancelSession: PropTypes.func,
+  onSessionDetail: PropTypes.func,
   openPopoverId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   setOpenPopoverId: PropTypes.func.isRequired,
   openDayKey: PropTypes.string,
@@ -1427,6 +1505,7 @@ MonthGrid.defaultProps = {
   onEditSession: () => {},
   onDeleteSession: () => {},
   onCancelSession: () => {},
+  onSessionDetail: () => {},
   openPopoverId: null,
   openDayKey: null,
   canManageSessions: false,
@@ -1441,6 +1520,7 @@ TimeGrid.propTypes = {
   onEditSession: PropTypes.func,
   onDeleteSession: PropTypes.func,
   onCancelSession: PropTypes.func,
+  onSessionDetail: PropTypes.func,
   openPopoverId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   setOpenPopoverId: PropTypes.func.isRequired,
   canManageSessions: PropTypes.bool,
@@ -1452,6 +1532,7 @@ TimeGrid.defaultProps = {
   onEditSession: () => {},
   onDeleteSession: () => {},
   onCancelSession: () => {},
+  onSessionDetail: () => {},
   openPopoverId: null,
   canManageSessions: false,
   isLearner: false,
@@ -1465,6 +1546,7 @@ WeekGrid.propTypes = {
   onEditSession: PropTypes.func,
   onDeleteSession: PropTypes.func,
   onCancelSession: PropTypes.func,
+  onSessionDetail: PropTypes.func,
   openPopoverId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   setOpenPopoverId: PropTypes.func.isRequired,
   canManageSessions: PropTypes.bool,
@@ -1476,6 +1558,7 @@ WeekGrid.defaultProps = {
   onEditSession: () => {},
   onDeleteSession: () => {},
   onCancelSession: () => {},
+  onSessionDetail: () => {},
   openPopoverId: null,
   canManageSessions: false,
   isLearner: false,
@@ -1489,6 +1572,7 @@ DayView.propTypes = {
   onEditSession: PropTypes.func,
   onDeleteSession: PropTypes.func,
   onCancelSession: PropTypes.func,
+  onSessionDetail: PropTypes.func,
   openPopoverId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   setOpenPopoverId: PropTypes.func.isRequired,
   canManageSessions: PropTypes.bool,
@@ -1500,6 +1584,7 @@ DayView.defaultProps = {
   onEditSession: () => {},
   onDeleteSession: () => {},
   onCancelSession: () => {},
+  onSessionDetail: () => {},
   openPopoverId: null,
   canManageSessions: false,
   isLearner: false,
@@ -1518,6 +1603,7 @@ CalendarView.propTypes = {
   onEditSession: PropTypes.func,
   onDeleteSession: PropTypes.func,
   onCancelSession: PropTypes.func,
+  onSessionDetail: PropTypes.func,
   loading: PropTypes.bool,
   canManageSessions: PropTypes.bool,
   isLearner: PropTypes.bool,
@@ -1528,6 +1614,7 @@ CalendarView.defaultProps = {
   onEditSession: () => {},
   onDeleteSession: () => {},
   onCancelSession: () => {},
+  onSessionDetail: () => {},
   loading: false,
   canManageSessions: false,
   isLearner: false,

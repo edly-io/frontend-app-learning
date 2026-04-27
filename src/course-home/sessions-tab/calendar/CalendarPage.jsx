@@ -12,6 +12,7 @@ import { USER_ROLE } from '../constants';
 import ScheduleMeetingModal from '../ScheduleMeetingModal';
 import SessionRequestModal from '../SessionRequestModal';
 import CalendarView, { getMonthGridDays, getWeekDays } from './CalendarView';
+import SessionDetailModal from './SessionDetailModal';
 
 const VIEWS = { MONTH: 'month', WEEK: 'week', DAY: 'day' };
 
@@ -76,6 +77,7 @@ const CalendarPage = () => {
   const [deleteError, setDeleteError] = useState('');
   const [sessionToCancel, setSessionToCancel] = useState(null);
   const [cancelError, setCancelError] = useState('');
+  const [sessionToView, setSessionToView] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
 
@@ -185,6 +187,10 @@ const CalendarPage = () => {
     setCancelError('');
   };
 
+  const handleViewSession = (session) => {
+    setSessionToView(session);
+  };
+
   // ── Calendar navigation handlers passed down to CalendarView ──
   const handleNavigate = useCallback((direction) => {
     setCurrentDate((prev) => {
@@ -259,6 +265,7 @@ const CalendarPage = () => {
           onEditSession={handleEditSession}
           onDeleteSession={handleDeleteSession}
           onCancelSession={handleCancelSession}
+          onSessionDetail={handleViewSession}
           loading={loading}
           canManageSessions={canManageSessions}
           isLearner={isLearner}
@@ -344,6 +351,14 @@ const CalendarPage = () => {
           </p>
         </StandardModal>
       )}
+
+      {/* Session detail — open from popover/day-popover title click. Read-only,
+          available to admins and learners alike. */}
+      <SessionDetailModal
+        session={sessionToView}
+        isOpen={Boolean(sessionToView)}
+        onClose={() => setSessionToView(null)}
+      />
 
       {/* Toast — persists across view transitions */}
       <div
