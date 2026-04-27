@@ -1,21 +1,33 @@
 import React, { useState, useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { Form, Spinner } from '@openedx/paragon';
+import {
+  Form, Icon, Spinner, Chip,
+} from '@openedx/paragon';
+import { Close, Search } from '@openedx/paragon/icons';
 
 /**
  * SearchableSelect
  *
- * A reusable single-select autocomplete dropdown backed by an in-memory list.
+ * Single- or multi-select autocomplete dropdown backed by an in-memory list.
  * Filters options by label as the user types. Supports keyboard navigation
  * (↑ / ↓ / Enter / Escape) and click-outside-to-close.
+ *
+ * In `multiple` mode selected items render as removable Paragon Chips inside
+ * the input wrapper (token-input UX); backspace on an empty query removes
+ * the last chip.
  *
  * Props
  * ─────
  *   id          {string}  – wired to the input `id` and label `htmlFor`
  *   label       {string}  – visible form label text
  *   options     {Array}   – [{ value, label, ...extras }] filtered in-memory by label
- *   value       {object|null} – currently selected option, or null
- *   onChange    {function} – (option | null) → void
+ *   value       {object|array|null}
+ *                 – single mode: selected option object or null
+ *                 – multi mode:  array of selected option objects (may be empty)
+ *   onChange    {function}
+ *                 – single mode: (option | null) → void
+ *                 – multi mode:  (nextArray) → void
+ *   multiple    {boolean} – enable multi-select / chip UI
  *   placeholder {string}
  *   disabled    {boolean}
  *   loading     {boolean} – shows a spinner in the dropdown while options are fetching
@@ -27,6 +39,7 @@ const SearchableSelect = ({
   options,
   value,
   onChange,
+  multiple,
   placeholder,
   disabled,
   loading,
@@ -36,6 +49,19 @@ const SearchableSelect = ({
   const [isOpen, setIsOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const containerRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const isMulti = multiple === true;
+  const effectiveValue = value ?? (isMulti ? [] : null);
+  let selectedList;
+  if (isMulti) {
+    selectedList = effectiveValue;
+  } else if (effectiveValue) {
+    selectedList = [effectiveValue];
+  } else {
+    selectedList = [];
+  }
+  const selectedIds = new Set(selectedList.map((o) => o.value));
 
   // Close the dropdown when the user clicks outside the component
   useEffect(() => {
@@ -49,33 +75,55 @@ const SearchableSelect = ({
     return () => document.removeEventListener('mousedown', handleMouseDown);
   }, []);
 
-  // Keep query in sync when value is cleared externally (e.g. parent resets state)
+  // Single-mode only: keep query in sync when value is cleared externally
   useEffect(() => {
-    if (!value) setQuery('');
-  }, [value]);
+    if (!isMulti && !value) { setQuery(''); }
+  }, [value, isMulti]);
 
-  const filteredOptions = options.filter(
-    (o) => o.label.toLowerCase().includes(query.toLowerCase()),
-  );
+  const filteredOptions = options.filter((o) => {
+    if (isMulti && selectedIds.has(o.value)) { return false; }
+    return o.label.toLowerCase().includes(query.toLowerCase());
+  });
 
   const selectOption = (option) => {
+    if (isMulti) {
+      onChange([...selectedList, option]);
+      setQuery('');
+      setFocusedIndex(-1);
+      // keep dropdown open for additional picks
+      setIsOpen(true);
+      inputRef.current?.focus();
+      return;
+    }
     onChange(option);
     setQuery('');
     setIsOpen(false);
     setFocusedIndex(-1);
   };
 
+  const removeSelected = (option) => {
+    if (!isMulti) { return; }
+    onChange(selectedList.filter((o) => o.value !== option.value));
+    inputRef.current?.focus();
+  };
+
   const handleInputChange = (e) => {
     setQuery(e.target.value);
     setIsOpen(true);
     setFocusedIndex(-1);
-    // Typing after a confirmed selection clears the selection
-    if (value) onChange(null);
+    // Single mode: typing after a confirmed selection clears the selection
+    if (!isMulti && value) { onChange(null); }
   };
 
   const handleKeyDown = (e) => {
+    // Multi-mode: Backspace on empty query removes last chip
+    if (isMulti && e.key === 'Backspace' && query === '' && selectedList.length > 0) {
+      e.preventDefault();
+      removeSelected(selectedList[selectedList.length - 1]);
+      return;
+    }
     if (!isOpen) {
-      if (e.key !== 'Escape') setIsOpen(true);
+      if (e.key !== 'Escape') { setIsOpen(true); }
       return;
     }
     switch (e.key) {
@@ -102,8 +150,31 @@ const SearchableSelect = ({
     }
   };
 
-  // Show the selected option's label in the input; otherwise show the live query
-  const inputDisplayValue = value ? value.label : query;
+  // Single mode: show selected label in input; otherwise query
+  // Multi mode: input always mirrors query (selections live as chips)
+  let inputDisplayValue;
+  if (isMulti) {
+    inputDisplayValue = query;
+  } else if (effectiveValue) {
+    inputDisplayValue = effectiveValue.label;
+  } else {
+    inputDisplayValue = query;
+  }
+
+  const inputCommonProps = {
+    id,
+    type: 'text',
+    value: inputDisplayValue,
+    onChange: handleInputChange,
+    onKeyDown: handleKeyDown,
+    placeholder: selectedList.length > 0 && isMulti ? '' : placeholder,
+    disabled,
+    autoComplete: 'off',
+    role: 'combobox',
+    'aria-expanded': isOpen,
+    'aria-autocomplete': 'list',
+    'aria-controls': `${id}-listbox`,
+  };
 
   return (
     <Form.Group className="mb-3">
@@ -112,24 +183,63 @@ const SearchableSelect = ({
       </Form.Label>
 
       <div ref={containerRef} style={{ position: 'relative' }}>
-        {/* Input */}
+        {isMulti ? (
+          <div className="pgn__form-control-decorator-group">
+            <div
+              onClick={() => { if (!disabled) { setIsOpen(true); inputRef.current?.focus(); } }}
+              role="presentation"
+              className="form-control h-auto"
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                gap: '0.25rem',
+                padding: '0.3125rem 0.5rem',
+                backgroundColor: disabled ? '#e9ecef' : '#fff',
+                cursor: disabled ? 'not-allowed' : 'text',
+              }}
+            >
+              <Icon src={Search} className="text-muted" style={{ width: 18, height: 18, flexShrink: 0 }} />
+              {selectedList.map((opt) => (
+                <Chip
+                  key={opt.value}
+                  iconAfter={Close}
+                  iconAfterAlt="Remove"
+                  onIconAfterClick={(e) => {
+                    e.stopPropagation();
+                    removeSelected(opt);
+                  }}
+                  disabled={disabled}
+                >
+                  {opt.label}
+                </Chip>
+              ))}
+              <input
+                {...inputCommonProps}
+                ref={inputRef}
+                onFocus={() => setIsOpen(true)}
+                style={{
+                  flex: '1 1 0',
+                  minWidth: 0,
+                  width: 'auto',
+                  border: 'none',
+                  outline: 'none',
+                  padding: '0.25rem 0',
+                  fontSize: 'inherit',
+                  lineHeight: 'inherit',
+                  backgroundColor: 'transparent',
+                }}
+              />
+            </div>
+          </div>
+        ) : (
           <Form.Control
-            id={id}
-            type="text"
-            value={inputDisplayValue}
-            onChange={handleInputChange}
-            onFocus={() => { if (!value) setIsOpen(true); }}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            disabled={disabled}
-            autoComplete="off"
-            role="combobox"
-            aria-expanded={isOpen}
-            aria-autocomplete="list"
-            aria-controls={`${id}-listbox`}
+            {...inputCommonProps}
+            onFocus={() => { if (!value) { setIsOpen(true); } }}
+            leadingElement={<Icon src={Search} />}
           />
+        )}
 
-        {/* Dropdown list */}
         {isOpen && !disabled && (
           <div
             id={`${id}-listbox`}
@@ -159,29 +269,32 @@ const SearchableSelect = ({
                 No results found
               </div>
             )}
-            {!loading && filteredOptions.map((option, index) => (
-              <div
-                key={option.value}
-                role="option"
-                aria-selected={value?.value === option.value}
-                onMouseDown={(e) => {
-                  // Prevent the input from blurring before the click registers
-                  e.preventDefault();
-                  selectOption(option);
-                }}
-                onMouseEnter={() => setFocusedIndex(index)}
-                style={{
-                  padding: '0.5rem 0.75rem',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  backgroundColor: index === focusedIndex ? '#f0f4ff' : 'transparent',
-                  color: value?.value === option.value ? '#0d6efd' : '#212529',
-                  fontWeight: value?.value === option.value ? 600 : 400,
-                }}
-              >
-                {option.label}
-              </div>
-            ))}
+            {!loading && filteredOptions.map((option, index) => {
+              const isSelected = !isMulti && effectiveValue?.value === option.value;
+              return (
+                <div
+                  key={option.value}
+                  role="option"
+                  tabIndex={-1}
+                  aria-selected={isSelected}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    selectOption(option);
+                  }}
+                  onMouseEnter={() => setFocusedIndex(index)}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    backgroundColor: index === focusedIndex ? '#f0f4ff' : 'transparent',
+                    color: isSelected ? '#0d6efd' : '#212529',
+                    fontWeight: isSelected ? 600 : 400,
+                  }}
+                >
+                  {option.label}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -189,20 +302,21 @@ const SearchableSelect = ({
   );
 };
 
+const optionShape = PropTypes.shape({
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  label: PropTypes.string.isRequired,
+});
+
 SearchableSelect.propTypes = {
   id: PropTypes.string.isRequired,
   label: PropTypes.string.isRequired,
   onChange: PropTypes.func.isRequired,
-  options: PropTypes.arrayOf(
-    PropTypes.shape({
-      value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-      label: PropTypes.string.isRequired,
-    }),
-  ),
-  value: PropTypes.shape({
-    value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    label: PropTypes.string,
-  }),
+  options: PropTypes.arrayOf(optionShape),
+  value: PropTypes.oneOfType([
+    optionShape,
+    PropTypes.arrayOf(optionShape),
+  ]),
+  multiple: PropTypes.bool,
   placeholder: PropTypes.string,
   disabled: PropTypes.bool,
   loading: PropTypes.bool,
@@ -212,6 +326,7 @@ SearchableSelect.propTypes = {
 SearchableSelect.defaultProps = {
   options: [],
   value: null,
+  multiple: false,
   placeholder: 'Search...',
   disabled: false,
   loading: false,

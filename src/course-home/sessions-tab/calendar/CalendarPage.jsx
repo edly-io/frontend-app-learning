@@ -4,14 +4,15 @@ import React, {
 import {
   Container, Spinner, Alert, Toast, StandardModal, Button,
 } from '@openedx/paragon';
-import { FooterSlot } from '@edx/frontend-component-footer';
-import { getCalendarSessions, deleteSession, getMySessionRequests } from '../api';
+import {
+  getCalendarSessions, deleteSession, cancelSession, getMySessionRequests,
+} from '../api';
 import { extractApiError } from '../utils';
 import { USER_ROLE } from '../constants';
 import ScheduleMeetingModal from '../ScheduleMeetingModal';
 import SessionRequestModal from '../SessionRequestModal';
-import HeaderSlot from '../../../plugin-slots/HeaderSlot';
 import CalendarView, { getMonthGridDays, getWeekDays } from './CalendarView';
+import SessionDetailModal from './SessionDetailModal';
 
 const VIEWS = { MONTH: 'month', WEEK: 'week', DAY: 'day' };
 
@@ -55,7 +56,6 @@ const CalendarPage = () => {
   const [error, setError] = useState('');
   const canManageSessions = userRole === USER_ROLE.ADMIN;
   const isLearner = userRole === USER_ROLE.LEARNER;
-  const isHost = userRole === USER_ROLE.ADMIN || userRole === USER_ROLE.INSTRUCTOR;
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Learner-only: map of sessionId → SessionRequest for the visible window.
@@ -75,6 +75,9 @@ const CalendarPage = () => {
   const [modalSession, setModalSession] = useState(undefined);
   const [sessionToDelete, setSessionToDelete] = useState(null);
   const [deleteError, setDeleteError] = useState('');
+  const [sessionToCancel, setSessionToCancel] = useState(null);
+  const [cancelError, setCancelError] = useState('');
+  const [sessionToView, setSessionToView] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
 
@@ -103,6 +106,10 @@ const CalendarPage = () => {
           const requests = await getMySessionRequests({
             startDate: start.toISOString(),
             endDate: end.toISOString(),
+            // Pull the full window in one shot — backend now paginates /me/
+            // (default 50). The calendar wants every visible request to render
+            // its session badge correctly. 200 is the backend max_page_size.
+            pageSize: 200,
           });
           if (cancelled) { return; }
           const list = Array.isArray(requests) ? requests : requests.results || [];
@@ -156,6 +163,32 @@ const CalendarPage = () => {
   const handleDeleteCancel = () => {
     setSessionToDelete(null);
     setDeleteError('');
+  };
+
+  const handleCancelSession = (session) => {
+    setCancelError('');
+    setSessionToCancel(session);
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!sessionToCancel) { return; }
+    try {
+      await cancelSession(sessionToCancel.course_id, sessionToCancel.id);
+      setSessionToCancel(null);
+      setRefreshKey((prev) => prev + 1);
+      showSuccess('Session cancelled.');
+    } catch (err) {
+      setCancelError(extractApiError(err, 'Failed to cancel session'));
+    }
+  };
+
+  const handleCancelDismiss = () => {
+    setSessionToCancel(null);
+    setCancelError('');
+  };
+
+  const handleViewSession = (session) => {
+    setSessionToView(session);
   };
 
   // ── Calendar navigation handlers passed down to CalendarView ──
@@ -221,7 +254,6 @@ const CalendarPage = () => {
 
     return (
       <Container className="py-4">
-        <h2 className="mb-4">My Sessions Calendar</h2>
         <CalendarView
           sessions={sessions}
           view={view}
@@ -232,10 +264,11 @@ const CalendarPage = () => {
           onScheduleNew={handleScheduleNew}
           onEditSession={handleEditSession}
           onDeleteSession={handleDeleteSession}
+          onCancelSession={handleCancelSession}
+          onSessionDetail={handleViewSession}
           loading={loading}
           canManageSessions={canManageSessions}
           isLearner={isLearner}
-          isHost={isHost}
           studentRequestMap={myRequests}
           onRequestSession={handleRequestSession}
         />
@@ -245,11 +278,9 @@ const CalendarPage = () => {
 
   return (
     <>
-      <HeaderSlot />
       <main id="main-content" className="d-flex flex-column flex-grow-1">
         {renderContent()}
       </main>
-      <FooterSlot />
 
       {/* Create / Edit modal — only for admins */}
       {canManageSessions && (
@@ -295,6 +326,39 @@ const CalendarPage = () => {
           </p>
         </StandardModal>
       )}
+
+      {/* Cancel confirmation — only for admins. Soft-cancel preserves the row +
+          Zoom; can be re-scheduled via PATCH status:scheduled if needed. */}
+      {canManageSessions && sessionToCancel && (
+        <StandardModal
+          isOpen
+          onClose={handleCancelDismiss}
+          title="Cancel Session"
+          footerNode={(
+            <>
+              <Button variant="tertiary" onClick={handleCancelDismiss}>Keep scheduled</Button>
+              <Button variant="warning" onClick={handleCancelConfirm} className="ml-2">
+                Cancel session
+              </Button>
+            </>
+          )}
+        >
+          {cancelError && <Alert variant="danger" className="mb-3">{cancelError}</Alert>}
+          <p>
+            Cancel <strong>{sessionToCancel.title}</strong>? Enrolled learners will see
+            the session as Cancelled. The Zoom meeting (if any) is kept so you can
+            reschedule.
+          </p>
+        </StandardModal>
+      )}
+
+      {/* Session detail — open from popover/day-popover title click. Read-only,
+          available to admins and learners alike. */}
+      <SessionDetailModal
+        session={sessionToView}
+        isOpen={Boolean(sessionToView)}
+        onClose={() => setSessionToView(null)}
+      />
 
       {/* Toast — persists across view transitions */}
       <div

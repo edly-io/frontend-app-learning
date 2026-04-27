@@ -1,5 +1,5 @@
 export const formatDateTime = (dateString) => {
-  if (!dateString) return '';
+  if (!dateString) { return ''; }
   const date = new Date(dateString);
   return date.toLocaleString('en-US', {
     year: 'numeric',
@@ -11,12 +11,12 @@ export const formatDateTime = (dateString) => {
 };
 
 export const toISOString = (dateTimeLocalString) => {
-  if (!dateTimeLocalString) return '';
+  if (!dateTimeLocalString) { return ''; }
   return new Date(dateTimeLocalString).toISOString();
 };
 
 export const toDateTimeLocal = (isoString) => {
-  if (!isoString) return '';
+  if (!isoString) { return ''; }
   const date = new Date(isoString);
   const offset = date.getTimezoneOffset() * 60000;
   const localDate = new Date(date.getTime() - offset);
@@ -24,10 +24,10 @@ export const toDateTimeLocal = (isoString) => {
 };
 
 export const formatDuration = (seconds) => {
-  if (!seconds || seconds === 0) return '0m';
+  if (!seconds || seconds === 0) { return '0m'; }
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  
+
   if (hours > 0) {
     return `${hours}h ${minutes}m`;
   }
@@ -67,9 +67,9 @@ export const extractApiError = (err, fallback = 'An unexpected error occurred') 
 export const bucketSessionsByDay = (sessions) => {
   const map = new Map();
   sessions.forEach((session) => {
-    if (!session.scheduled_start_time) return;
+    if (!session.scheduled_start_time) { return; }
     const key = new Date(session.scheduled_start_time).toLocaleDateString('en-CA'); // YYYY-MM-DD
-    if (!map.has(key)) map.set(key, []);
+    if (!map.has(key)) { map.set(key, []); }
     map.get(key).push(session);
   });
   return map;

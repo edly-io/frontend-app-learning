@@ -11,8 +11,11 @@ import { Routes, Route } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { fetchDiscussionTab, fetchLiveTab } from './course-home/data/thunks';
 import DiscussionTab from './course-home/discussion-tab/DiscussionTab';
-import SessionsTab, { CalendarPage, SessionsListPage, SessionDetailPage } from './course-home/sessions-tab';
-import { fetchAttendanceTab } from './course-home/data';
+import SessionsTab, { SessionsListPage, SessionDetailPage } from './course-home/sessions-tab';
+import { sessionsAdminRoutes } from './sessions-admin/routes';
+import {
+  fetchAttendanceTab, fetchDatesTab, fetchOutlineTab, fetchProgressTab,
+} from './course-home/data';
 
 import messages from './i18n';
 import { UserMessagesProvider } from './generic/user-messages';
@@ -27,7 +30,6 @@ import GoalUnsubscribe from './course-home/goal-unsubscribe';
 import ProgressTab from './course-home/progress-tab/ProgressTab';
 import { TabContainer } from './tab-page';
 
-import { fetchDatesTab, fetchOutlineTab, fetchProgressTab } from './course-home/data';
 import { fetchCourse } from './courseware/data';
 import { store } from './store';
 import NoticesProvider from './generic/notices';
@@ -56,7 +58,7 @@ subscribe(APP_READY, () => {
                   <Route path="*" element={<PageWrap><PageNotFound /></PageWrap>} />
                   <Route path={ROUTES.UNSUBSCRIBE} element={<PageWrap><GoalUnsubscribe /></PageWrap>} />
                   <Route path={ROUTES.REDIRECT} element={<PageWrap><CoursewareRedirectLandingPage /></PageWrap>} />
-                  <Route path={ROUTES.CALENDAR} element={<PageWrap><CalendarPage /></PageWrap>} />
+                  {sessionsAdminRoutes}
                   <Route
                     path={ROUTES.PREFERENCES_UNSUBSCRIBE}
                     element={

@@ -9,7 +9,9 @@ import {
 import { updateAttendanceRecord } from './api';
 import { ATTENDANCE_STATUS } from './constants';
 
-const AttendanceOverrideModal = ({ isOpen, onClose, record, onSuccess }) => {
+const AttendanceOverrideModal = ({
+  isOpen, onClose, record, onSuccess,
+}) => {
   const [formData, setFormData] = useState({
     status: record.status,
     override_reason: '',
@@ -60,9 +62,9 @@ const AttendanceOverrideModal = ({ isOpen, onClose, record, onSuccess }) => {
 
       onSuccess();
     } catch (err) {
-      const errorMessage = err.response?.data?.detail 
-        || err.response?.data?.error 
-        || err.message 
+      const errorMessage = err.response?.data?.detail
+        || err.response?.data?.error
+        || err.message
         || 'Failed to update attendance record';
       setError(errorMessage);
     } finally {

@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { Tabs, Tab } from '@openedx/paragon';
+import { useParams } from 'react-router-dom';
 import SessionList from './SessionList';
 import { useModel } from '../../generic/model-store';
-import { useParams } from 'react-router-dom';
 
-const SessionTabs = ({ courseId, refreshKey, onViewAttendance, onEditSession, onScheduleNew, onDeleteSuccess }) => {
+const SessionTabs = ({
+  courseId, refreshKey, onViewAttendance, onEditSession, onScheduleNew, onDeleteSuccess,
+}) => {
   const [activeTab, setActiveTab] = useState('upcoming');
   const { courseId: paramCourseId } = useParams();
   const effectiveCourseId = courseId || paramCourseId;
-  
+
   // Get course metadata to determine if user is instructor
   const courseHomeMetadata = useModel('courseHomeMeta', effectiveCourseId);
   const isInstructor = courseHomeMetadata?.isStaff || false;

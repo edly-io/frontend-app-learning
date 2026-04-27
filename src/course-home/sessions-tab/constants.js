@@ -55,7 +55,11 @@ export const REQUEST_STATUS_VARIANTS = {
   [REQUEST_STATUS.REJECTED]: 'danger',
 };
 
-// Role strings returned by calendar-sessions API (user_role field).
+// Role strings returned by attendance APIs.
+// Global role (calendar `user_role` top-level) is 2-way — admin vs learner.
+// Per-session role (each session's own `user_role`) adds 'instructor' as a
+// read-only scope: learner on the roster gets a badge + roster visibility,
+// no mutate permissions.
 export const USER_ROLE = {
   ADMIN: 'admin',
   INSTRUCTOR: 'instructor',

@@ -62,7 +62,9 @@ const SessionsApp = () => {
     <>
       {/* Toast — outside view conditionals so it persists across view transitions */}
       <div
-        style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 9999 }}
+        style={{
+          position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 9999,
+        }}
         aria-live="polite"
         aria-atomic="true"
       >

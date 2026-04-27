@@ -1,6 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StandardModal, Button, Form, Spinner, Alert, OverlayTrigger, Tooltip } from '@openedx/paragon';
-import { createSession, updateSession, fetchCourseRuns, fetchInstructors } from './api';
+import {
+  StandardModal, Button, Form, Spinner, Alert, OverlayTrigger, Tooltip,
+} from '@openedx/paragon';
+import {
+  createSession, updateSession, fetchCourseRuns, fetchInstructors,
+} from './api';
 import { toISOString, toDateTimeLocal, extractApiError } from './utils';
 import SearchableSelect from './SearchableSelect';
 
@@ -19,17 +23,16 @@ const RECURRENCE_TYPES = [
   { value: 'monthly', label: 'month' },
 ];
 
-// Mon–Fri weekday buttons — Zoom weekday numbers (Mon=2 … Fri=6)
+// Sun–Sat weekday buttons — Zoom weekday numbers (Sun=1 … Sat=7)
 const ALL_WEEK_DAYS = [
+  { value: 1, letter: 'S', fullName: 'Sunday' },
   { value: 2, letter: 'M', fullName: 'Monday' },
   { value: 3, letter: 'T', fullName: 'Tuesday' },
   { value: 4, letter: 'W', fullName: 'Wednesday' },
   { value: 5, letter: 'T', fullName: 'Thursday' },
   { value: 6, letter: 'F', fullName: 'Friday' },
+  { value: 7, letter: 'S', fullName: 'Saturday' },
 ];
-
-// Alias (same set, used in summary helpers)
-const WEEK_DAYS = ALL_WEEK_DAYS.slice(1, 6);
 
 const MONTHLY_WEEKS = [
   { value: 1, label: 'First' },
@@ -41,12 +44,12 @@ const MONTHLY_WEEKS = [
 
 // ─── Recurrence limits ────────────────────────────────────────────────────────
 
-const MAX_END_COUNT = 30;   // We cap at 30; Zoom's absolute hard limit is 60
-const MAX_END_MONTHS = 2;   // End date can be at most 2 months from session start
+const MAX_END_COUNT = 30; // We cap at 30; Zoom's absolute hard limit is 60
+const MAX_END_MONTHS = 2; // End date can be at most 2 months from session start
 
 /** Returns the ISO date string (YYYY-MM-DD) that is MAX_END_MONTHS months after startDateString. */
 const getMaxEndDate = (startDateString) => {
-  if (!startDateString) return '';
+  if (!startDateString) { return ''; }
   const d = new Date(startDateString);
   d.setMonth(d.getMonth() + MAX_END_MONTHS);
   return d.toISOString().slice(0, 10);
@@ -54,32 +57,31 @@ const getMaxEndDate = (startDateString) => {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Returns the Zoom weekday number for a datetime-local string, clamped to Mon–Fri (2–6). */
+/** Returns the Zoom weekday number (1=Sun … 7=Sat) for a datetime-local string. */
 const getZoomWeekdayFromDate = (dateString) => {
-  if (!dateString) return 2;
-  const day = new Date(dateString).getDay() + 1; // JS 0-based → Zoom 1-based (1=Sun … 7=Sat)
-  return Math.min(6, Math.max(2, day)); // Clamp to Mon–Fri (2–6)
+  if (!dateString) { return 2; }
+  return new Date(dateString).getDay() + 1; // JS 0-based → Zoom 1-based (1=Sun … 7=Sat)
 };
 
 /** Returns the day-of-month (1–31) from a datetime-local string. */
 const getMonthDayFromDate = (dateString) => {
-  if (!dateString) return 1;
+  if (!dateString) { return 1; }
   return new Date(dateString).getDate();
 };
 
 /** Returns which week-of-month the date falls on (1–4). */
 const getMonthWeekFromDate = (dateString) => {
-  if (!dateString) return 1;
+  if (!dateString) { return 1; }
   return Math.min(4, Math.ceil(new Date(dateString).getDate() / 7));
 };
 
 const getLocalDateString = (isoString) => {
-  if (!isoString) return '';
+  if (!isoString) { return ''; }
   return new Date(isoString).toISOString().slice(0, 10);
 };
 
 const splitDateTimeLocal = (dateTimeLocalString) => {
-  if (!dateTimeLocalString) return { date: '', time: '' };
+  if (!dateTimeLocalString) { return { date: '', time: '' }; }
   const [date, time] = dateTimeLocalString.split('T');
   return { date: date || '', time: (time || '').slice(0, 5) };
 };
@@ -87,15 +89,17 @@ const splitDateTimeLocal = (dateTimeLocalString) => {
 const combineDateTimeLocal = (date, time) => (date && time ? `${date}T${time}` : '');
 
 /** Builds a human-readable summary shown below the recurrence panel. */
-const buildSummary = ({ recurrenceType, weeklyDays, monthlyMode, monthlyDay, monthlyWeek, monthlyWeekDay, endType, endCount, endDate }) => {
+const buildSummary = ({
+  recurrenceType, weeklyDays, monthlyMode, monthlyDay, monthlyWeek, monthlyWeekDay, endType, endCount, endDate,
+}) => {
   const dayName = (v) => ALL_WEEK_DAYS.find((d) => d.value === v)?.fullName ?? '';
   const weekLabel = (v) => MONTHLY_WEEKS.find((w) => w.value === v)?.label ?? '';
 
   let pattern = '';
   if (recurrenceType === 'daily') {
-    pattern = 'Every weekday (Mon–Fri)';
+    pattern = 'Every day';
   } else if (recurrenceType === 'weekly') {
-    if (!weeklyDays.length) return '';
+    if (!weeklyDays.length) { return ''; }
     const names = weeklyDays.map(dayName).filter(Boolean);
     pattern = `Every ${names.join(' and ')}`;
   } else if (recurrenceType === 'monthly') {
@@ -106,8 +110,8 @@ const buildSummary = ({ recurrenceType, weeklyDays, monthlyMode, monthlyDay, mon
     }
   }
 
-  if (!pattern) return '';
-  if (endType === 'count') return `${pattern} • ${endCount} session${endCount !== 1 ? 's' : ''}`;
+  if (!pattern) { return ''; }
+  if (endType === 'count') { return `${pattern} • ${endCount} session${endCount !== 1 ? 's' : ''}`; }
   if (endType === 'date' && endDate) {
     const formatted = new Date(`${endDate}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     return `${pattern} • until ${formatted}`;
@@ -115,7 +119,9 @@ const buildSummary = ({ recurrenceType, weeklyDays, monthlyMode, monthlyDay, mon
   return pattern;
 };
 
-const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session }) => {
+const ScheduleMeetingModal = ({
+  isOpen, onClose, courseId, onSuccess, session,
+}) => {
   const timezoneName = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -149,14 +155,14 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
   const [courseRunOptions, setCourseRunOptions] = useState([]);
   const [instructorOptions, setInstructorOptions] = useState([]);
   const [selectedCourseRun, setSelectedCourseRun] = useState(null);
-  const [selectedInstructor, setSelectedInstructor] = useState(null);
+  const [selectedInstructors, setSelectedInstructors] = useState([]);
   const [selectedClass, setSelectedClass] = useState('');
   const [courseRunsLoading, setCourseRunsLoading] = useState(false);
   const [instructorsLoading, setInstructorsLoading] = useState(false);
 
   // Fetch the full course run list once each time the modal opens
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) { return; }
     setCourseRunsLoading(true);
     fetchCourseRuns()
       .then((data) => setCourseRunOptions(data.map((r) => ({ value: r.id, label: r.title }))))
@@ -168,11 +174,11 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
   //   edit mode  → match session.course_id
   //   create mode → match the courseId prop (course-scoped sessions tab)
   useEffect(() => {
-    if (courseRunOptions.length === 0) return;
+    if (courseRunOptions.length === 0) { return; }
     const targetId = session ? String(session.course_id) : courseId;
-    if (!targetId) return;
+    if (!targetId) { return; }
     const match = courseRunOptions.find((r) => r.value === targetId);
-    if (match) setSelectedCourseRun(match);
+    if (match) { setSelectedCourseRun(match); }
   }, [courseRunOptions, session, courseId]);
 
   // Fetch instructors whenever the selected course run changes;
@@ -181,11 +187,11 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
   useEffect(() => {
     if (!selectedCourseRunId) {
       setInstructorOptions([]);
-      setSelectedInstructor(null);
+      setSelectedInstructors([]);
       return;
     }
     setInstructorsLoading(true);
-    setSelectedInstructor(null);
+    setSelectedInstructors([]);
     fetchInstructors(selectedCourseRunId)
       .then((data) => setInstructorOptions(
         data.map((i) => ({ value: i.user_id, label: i.name, email: i.email })),
@@ -194,11 +200,17 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
       .finally(() => setInstructorsLoading(false));
   }, [selectedCourseRunId]);
 
-  // Pre-fill instructor once options are loaded (edit mode only)
+  // Pre-fill instructors once options are loaded (edit mode only).
+  // Backend returns `instructor_emails` (ordered); match each to the loaded
+  // instructor options and preserve order.
   useEffect(() => {
-    if (!session || instructorOptions.length === 0) return;
-    const match = instructorOptions.find((i) => i.email === session.instructor_email);
-    if (match) setSelectedInstructor(match);
+    if (!session || instructorOptions.length === 0) { return; }
+    const emails = session.instructor_emails || [];
+    if (emails.length === 0) { return; }
+    const matched = emails
+      .map((email) => instructorOptions.find((i) => i.email === email))
+      .filter(Boolean);
+    if (matched.length > 0) { setSelectedInstructors(matched); }
   }, [instructorOptions, session]);
 
   // Pre-fill form when editing
@@ -279,7 +291,7 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
       setEndCount(10);
       setEndDate('');
       setSelectedCourseRun(null);
-      setSelectedInstructor(null);
+      setSelectedInstructors([]);
       setSelectedClass('');
       setInstructorOptions([]);
     }
@@ -295,12 +307,14 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
       setMonthlyWeek(getMonthWeekFromDate(baseDateTime));
       setMonthlyWeekDay(weekday);
       // Day 29-31 doesn't exist in all months — force the safer weekday pattern
-      if (day >= 29) setMonthlyMode('week');
+      if (day >= 29) { setMonthlyMode('week'); }
     }
   }, [formData.scheduled_start_time, startDateInput, session]);
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const {
+      name, value, type, checked,
+    } = e.target;
     setFormData({
       ...formData,
       [name]: type === 'checkbox' ? checked : value,
@@ -354,7 +368,7 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
       setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
       return false;
     }
-    if (!selectedInstructor) {
+    if (selectedInstructors.length === 0) {
       setError('Instructor is required');
       setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
       return false;
@@ -376,6 +390,11 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
     }
     if (new Date(formData.scheduled_end_time) <= new Date(formData.scheduled_start_time)) {
       setError('End time must be after start time');
+      setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+      return false;
+    }
+    if (new Date(formData.scheduled_start_time) <= new Date()) {
+      setError('Start time must be in the future');
       setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
       return false;
     }
@@ -427,14 +446,14 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
   };
 
   const buildRecurrence = () => {
-    if (!isRecurring) return null;
+    if (!isRecurring) { return null; }
     const recurrence = { repeat_interval: 1 };
     if (recurrenceType === 'daily') {
       // type 1 = Zoom daily recurrence (every weekday when repeat_interval=1 and no weekly_days)
       recurrence.type = 1;
     } else if (recurrenceType === 'weekly') {
       recurrence.type = 2;
-      recurrence.weekly_days = [...weeklyDays].filter((d) => d >= 2 && d <= 6).sort((a, b) => a - b).join(',');
+      recurrence.weekly_days = [...weeklyDays].filter((d) => d >= 1 && d <= 7).sort((a, b) => a - b).join(',');
     } else if (recurrenceType === 'monthly') {
       recurrence.type = 3;
       if (monthlyMode === 'day') {
@@ -455,11 +474,11 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     setLoading(true);
 
     try {
@@ -473,7 +492,7 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
         scheduled_end_time: toISOString(formData.scheduled_end_time),
         timezone: timezoneName,
         is_recurring: isRecurring,
-        ...(selectedInstructor && { instructor_email: selectedInstructor.email }),
+        instructor_emails: selectedInstructors.map((i) => i.email),
       };
       sessionData.create_zoom_meeting = createZoomMeeting;
       if (recurrence) {
@@ -488,9 +507,9 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
         // Create new session
         result = await createSession(effectiveCourseId, sessionData);
       }
-      
+
       onSuccess(result);
-      
+
       // Reset form
       setFormData({
         title: '',
@@ -518,7 +537,7 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
     <StandardModal
       isOpen={isOpen}
       onClose={handleClose}
-      title={session ? "Edit Session" : "Schedule New Meeting"}
+      title={session ? 'Edit Session' : 'Schedule New Meeting'}
       footerNode={(
         <>
           <Button variant="tertiary" onClick={handleClose}>
@@ -537,159 +556,173 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
         </>
       )}
     >
-      <div style={{ maxHeight: 'calc(80vh - 10rem)', overflowY: 'auto', overflowX: 'hidden', padding: '0 4px' }}>
-      {error && (
+      <div style={{
+        maxHeight: 'calc(80vh - 10rem)', overflowY: 'auto', overflowX: 'hidden', padding: '0 4px',
+      }}
+      >
+        {error && (
         <Alert variant="danger" dismissible onClose={() => setError('')} ref={errorRef}>
           {error}
         </Alert>
-      )}
+        )}
 
-      <Form onSubmit={handleSubmit}>
-        <Form.Group className="mb-3">
-          <Form.Label>Title *</Form.Label>
-          <Form.Control
-            type="text"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
+        <Form onSubmit={handleSubmit}>
+          <Form.Group className="mb-3">
+            <Form.Label>Title *</Form.Label>
+            <Form.Control
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              required
+              placeholder="e.g., Week 5 Live Session"
+            />
+          </Form.Group>
+
+          <SearchableSelect
+            id="session-course-run"
+            label="Course"
+            options={courseRunOptions}
+            value={selectedCourseRun}
+            onChange={setSelectedCourseRun}
+            placeholder="Search by course title..."
+            loading={courseRunsLoading}
             required
-            placeholder="e.g., Week 5 Live Session"
           />
-        </Form.Group>
 
-        <SearchableSelect
-          id="session-course-run"
-          label="Course"
-          options={courseRunOptions}
-          value={selectedCourseRun}
-          onChange={setSelectedCourseRun}
-          placeholder="Search by course title..."
-          loading={courseRunsLoading}
-          required
-        />
-
-        <SearchableSelect
-          id="session-instructor"
-          label="Instructor"
-          options={instructorOptions}
-          value={selectedInstructor}
-          onChange={setSelectedInstructor}
-          placeholder={selectedCourseRun ? 'Search by name...' : 'Select a course first'}
-          loading={instructorsLoading}
-          disabled={!selectedCourseRun}
-          required
-        />
-
-        <Form.Group className="mb-3">
-          <Form.Label>Class *</Form.Label>
-          <Form.Control
-            as="select"
-            value={selectedClass}
-            onChange={(e) => setSelectedClass(e.target.value)}
+          <SearchableSelect
+            id="session-instructor"
+            label="Instructor"
+            options={instructorOptions}
+            value={selectedInstructors}
+            onChange={setSelectedInstructors}
+            multiple
+            placeholder={selectedCourseRun ? 'Search by name...' : 'Select a course first'}
+            loading={instructorsLoading}
+            disabled={!selectedCourseRun}
             required
-          >
-            <option value="">Select a class...</option>
-            {CLASS_OPTIONS.map((cls) => (
-              <option key={cls} value={cls}>{cls}</option>
-            ))}
-          </Form.Control>
-        </Form.Group>
-
-        <Form.Group className="mb-3">
-          <Form.Label>Description</Form.Label>
-          <Form.Control
-            as="textarea"
-            rows={3}
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            placeholder="Add session details..."
           />
-        </Form.Group>
 
-        <Form.Group className="mb-3">
-          <Form.Label>Start date and time *</Form.Label>
-          <div className="row g-2">
-            <div className="col-7">
-              <Form.Control
-                type="date"
-                value={startDateInput}
-                onChange={handleStartDateChange}
-                aria-label="Start date"
-                required
-              />
+          <Form.Group className="mb-3">
+            <Form.Label>Class *</Form.Label>
+            <Form.Control
+              as="select"
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              required
+            >
+              <option value="">Select a class...</option>
+              {CLASS_OPTIONS.map((cls) => (
+                <option key={cls} value={cls}>{cls}</option>
+              ))}
+            </Form.Control>
+          </Form.Group>
+
+          <Form.Group className="mb-3">
+            <Form.Label>Description</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Add session details..."
+            />
+          </Form.Group>
+
+          <Form.Group className="mb-3">
+            <Form.Label>Start date and time *</Form.Label>
+            <div className="row g-2">
+              <div className="col-7">
+                <Form.Control
+                  type="date"
+                  value={startDateInput}
+                  onChange={handleStartDateChange}
+                  aria-label="Start date"
+                  required
+                />
+              </div>
+              <div className="col-5">
+                <Form.Control
+                  type="time"
+                  value={startTimeInput}
+                  onChange={handleStartTimeChange}
+                  aria-label="Start time"
+                  step="60"
+                  required
+                />
+              </div>
             </div>
-            <div className="col-5">
-              <Form.Control
-                type="time"
-                value={startTimeInput}
-                onChange={handleStartTimeChange}
-                aria-label="Start time"
-                step="60"
-                required
-              />
+          </Form.Group>
+
+          <Form.Group className="mb-3">
+            <Form.Label>End date and time *</Form.Label>
+            <div className="row g-2">
+              <div className="col-7">
+                <Form.Control
+                  type="date"
+                  value={endDateInput}
+                  onChange={handleEndDateChange}
+                  aria-label="End date"
+                  required
+                />
+              </div>
+              <div className="col-5">
+                <Form.Control
+                  type="time"
+                  value={endTimeInput}
+                  onChange={handleEndTimeChange}
+                  aria-label="End time"
+                  step="60"
+                  required
+                />
+              </div>
             </div>
-          </div>
-        </Form.Group>
+          </Form.Group>
 
-        <Form.Group className="mb-3">
-          <Form.Label>End date and time *</Form.Label>
-          <div className="row g-2">
-            <div className="col-7">
-              <Form.Control
-                type="date"
-                value={endDateInput}
-                onChange={handleEndDateChange}
-                aria-label="End date"
-                required
-              />
-            </div>
-            <div className="col-5">
-              <Form.Control
-                type="time"
-                value={endTimeInput}
-                onChange={handleEndTimeChange}
-                aria-label="End time"
-                step="60"
-                required
-              />
-            </div>
-          </div>
-        </Form.Group>
+          <Form.Group className="mb-2">
+            <Form.Checkbox
+              id="create-zoom-meeting-toggle"
+              name="create_zoom_meeting"
+              checked={createZoomMeeting}
+              onChange={(e) => {
+                const next = e.target.checked;
+                setCreateZoomMeeting(next);
+              }}
+              disabled={Boolean(session?.create_zoom_meeting)}
+            >
+              Create Zoom meeting for this session
+            </Form.Checkbox>
+            <Form.Text className="text-muted">
+              {session?.meeting_id && !session?.create_zoom_meeting ? (
+                <>
+                  This session has a Zoom meeting created from a remote-attendance
+                  request. Checking this opens it to all enrolled learners and
+                  auto-approves any pending remote requests.
+                </>
+              ) : (
+                <>
+                  Only create a Zoom meeting if you plan to use it for this session.
+                  Remote learners get individual Zoom links when you approve their
+                  session requests.
+                </>
+              )}
+            </Form.Text>
+          </Form.Group>
 
-        <Form.Group className="mb-2">
-          <Form.Checkbox
-            id="create-zoom-meeting-toggle"
-            name="create_zoom_meeting"
-            checked={createZoomMeeting}
-            onChange={(e) => {
-              const next = e.target.checked;
-              setCreateZoomMeeting(next);
-            }}
-            disabled={Boolean(session?.meeting_join_url)}
-          >
-            Create Zoom meeting for this session
-          </Form.Checkbox>
-          <Form.Text className="text-muted">
-            Only create a Zoom meeting if you plan to use it for this session.
-            Remote learners get individual Zoom links when you approve their
-            session requests.
-          </Form.Text>
-        </Form.Group>
+          <Form.Group className="mb-0">
+            <Form.Checkbox
+              id="recurring-meeting-toggle"
+              name="is_recurring"
+              checked={isRecurring}
+              onChange={(e) => setIsRecurring(e.target.checked)}
+              disabled={Boolean(session?.is_recurring)}
+            >
+              Recurring meeting
+            </Form.Checkbox>
+          </Form.Group>
 
-        <Form.Group className="mb-0">
-          <Form.Checkbox
-            id="recurring-meeting-toggle"
-            name="is_recurring"
-            checked={isRecurring}
-            onChange={(e) => setIsRecurring(e.target.checked)}
-            disabled={Boolean(session?.is_recurring)}
-          >
-            Recurring meeting
-          </Form.Checkbox>
-        </Form.Group>
-
-        {isRecurring && (
+          {isRecurring && (
           <div
             className="mt-3 p-3 rounded"
             style={{ backgroundColor: '#f8f9fa', border: '1px solid #dee2e6' }}
@@ -726,8 +759,7 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
                           type="button"
                           aria-pressed={selected}
                           onClick={() => {
-                            if (selected) setWeeklyDays(weeklyDays.filter((d) => d !== day.value));
-                            else setWeeklyDays([...weeklyDays, day.value]);
+                            if (selected) { setWeeklyDays(weeklyDays.filter((d) => d !== day.value)); } else { setWeeklyDays([...weeklyDays, day.value]); }
                           }}
                           style={{
                             width: '34px',
@@ -806,7 +838,7 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
                       type="text"
                       inputMode="numeric"
                       value={endCount}
-                      onChange={(e) => { setEndType('count'); const v = parseInt(e.target.value.replace(/\D/g, ''), 10); if (!isNaN(v)) setEndCount(Math.min(MAX_END_COUNT, Math.max(1, v))); }}
+                      onChange={(e) => { setEndType('count'); const v = parseInt(e.target.value.replace(/\D/g, ''), 10); if (!isNaN(v)) { setEndCount(Math.min(MAX_END_COUNT, Math.max(1, v))); } }}
                       onClick={() => setEndType('count')}
                       size="sm"
                       style={{ width: '56px', textAlign: 'center', flexShrink: 0 }}
@@ -819,20 +851,26 @@ const ScheduleMeetingModal = ({ isOpen, onClose, courseId, onSuccess, session })
             </Form.Group>
 
             {/* ── Live summary ── */}
-            {buildSummary({ recurrenceType, weeklyDays, monthlyMode, monthlyDay, monthlyWeek, monthlyWeekDay, endType, endCount, endDate }) && (
-              <div
-                className="d-flex align-items-center rounded p-2"
-                style={{ backgroundColor: '#e8f4fd', border: '1px solid #b8daff', gap: '0.5rem', marginTop: '0.25rem' }}
-              >
-                <span style={{ fontSize: '1rem' }}>📅</span>
-                <small style={{ color: '#0c5460' }}>
-                  {buildSummary({ recurrenceType, weeklyDays, monthlyMode, monthlyDay, monthlyWeek, monthlyWeekDay, endType, endCount, endDate })}
-                </small>
-              </div>
+            {buildSummary({
+              recurrenceType, weeklyDays, monthlyMode, monthlyDay, monthlyWeek, monthlyWeekDay, endType, endCount, endDate,
+            }) && (
+            <div
+              className="d-flex align-items-center rounded p-2"
+              style={{
+                backgroundColor: '#e8f4fd', border: '1px solid #b8daff', gap: '0.5rem', marginTop: '0.25rem',
+              }}
+            >
+              <span style={{ fontSize: '1rem' }}>📅</span>
+              <small style={{ color: '#0c5460' }}>
+                {buildSummary({
+                  recurrenceType, weeklyDays, monthlyMode, monthlyDay, monthlyWeek, monthlyWeekDay, endType, endCount, endDate,
+                })}
+              </small>
+            </div>
             )}
           </div>
-        )}
-      </Form>
+          )}
+        </Form>
       </div>
     </StandardModal>
   );

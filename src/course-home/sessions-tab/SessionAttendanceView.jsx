@@ -12,11 +12,15 @@ import {
 } from '@openedx/paragon';
 import { Edit } from '@openedx/paragon/icons';
 import { getSession, getAttendanceRecords } from './api';
-import { formatDateTime, formatDuration, getStatusVariant, extractApiError } from './utils';
+import {
+  formatDateTime, formatDuration, getStatusVariant, extractApiError,
+} from './utils';
 import { ATTENDANCE_STATUS } from './constants';
 import AttendanceOverrideModal from './AttendanceOverrideModal';
 
-const SessionAttendanceView = ({ sessionId, courseId, isInstructor, onBack }) => {
+const SessionAttendanceView = ({
+  sessionId, courseId, isInstructor, onBack,
+}) => {
   const [session, setSession] = useState(null);
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,9 +57,7 @@ const SessionAttendanceView = ({ sessionId, courseId, isInstructor, onBack }) =>
       const totalRecords = recordsList.length;
       const presentCount = recordsList.filter((r) => r.status === 'present').length;
       const absentCount = recordsList.filter((r) => r.status === 'absent').length;
-      const partialCount = recordsList.filter((r) =>
-        ['late', 'left_early', 'partial'].includes(r.status)
-      ).length;
+      const partialCount = recordsList.filter((r) => ['late', 'left_early', 'partial'].includes(r.status)).length;
 
       setStats({
         total: totalRecords,
@@ -84,105 +86,104 @@ const SessionAttendanceView = ({ sessionId, courseId, isInstructor, onBack }) =>
 
   const columns = isInstructor
     ? [
-        {
-          Header: 'Student',
-          accessor: 'email',
-          Cell: ({ row }) => (
-            <div>
-              <div className="font-weight-bold">{row.original.email}</div>
-              {row.original.user_name && (
-                <small className="text-muted">{row.original.user_name}</small>
-              )}
-            </div>
-          ),
-        },
-        {
-          Header: 'Join Time',
-          accessor: 'first_join_time',
-          Cell: ({ value }) => (value ? formatDateTime(value) : '-'),
-        },
-        {
-          Header: 'Leave Time',
-          accessor: 'last_leave_time',
-          Cell: ({ value }) => (value ? formatDateTime(value) : '-'),
-        },
-        {
-          Header: 'Duration',
-          accessor: 'total_duration',
-          Cell: ({ value }) => formatDuration(value),
-        },
-        {
-          Header: 'Status',
-          accessor: 'status',
-          Cell: ({ value, row }) => (
-            <div>
-              <Badge variant={getStatusVariant(value)}>
-                {ATTENDANCE_STATUS[value] || value}
-              </Badge>
-              {row.original.is_overridden && (
-                <Badge variant="warning" className="ml-2">
-                  Overridden
-                </Badge>
-              )}
-            </div>
-          ),
-        },
-        {
-          Header: 'Actions',
-          accessor: 'id',
-          Cell: ({ row }) => (
-            <Button
-              variant="link"
-              size="sm"
-              iconBefore={Edit}
-              onClick={() => handleOverrideClick(row.original)}
-            >
-              Override
-            </Button>
-          ),
-        },
-      ]
+      {
+        Header: 'Student',
+        accessor: 'email',
+        Cell: ({ row }) => (
+          <div>
+            <div className="font-weight-bold">{row.original.email}</div>
+            {row.original.user_name && (
+            <small className="text-muted">{row.original.user_name}</small>
+            )}
+          </div>
+        ),
+      },
+      {
+        Header: 'Join Time',
+        accessor: 'first_join_time',
+        Cell: ({ value }) => (value ? formatDateTime(value) : '-'),
+      },
+      {
+        Header: 'Leave Time',
+        accessor: 'last_leave_time',
+        Cell: ({ value }) => (value ? formatDateTime(value) : '-'),
+      },
+      {
+        Header: 'Duration',
+        accessor: 'total_duration',
+        Cell: ({ value }) => formatDuration(value),
+      },
+      {
+        Header: 'Status',
+        accessor: 'status',
+        Cell: ({ value, row }) => (
+          <div>
+            <Badge variant={getStatusVariant(value)}>
+              {ATTENDANCE_STATUS[value] || value}
+            </Badge>
+            {row.original.is_overridden && (
+            <Badge variant="warning" className="ml-2">
+              Overridden
+            </Badge>
+            )}
+          </div>
+        ),
+      },
+      {
+        Header: 'Actions',
+        accessor: 'id',
+        Cell: ({ row }) => (
+          <Button
+            variant="link"
+            size="sm"
+            iconBefore={Edit}
+            onClick={() => handleOverrideClick(row.original)}
+          >
+            Override
+          </Button>
+        ),
+      },
+    ]
     : [
-        {
-          Header: 'Session',
-          accessor: 'session_title',
-          Cell: () => session?.title || '-',
-        },
-        {
-          Header: 'Date',
-          accessor: 'session_date',
-          Cell: () =>
-            session?.scheduled_start_time
-              ? formatDateTime(session.scheduled_start_time)
-              : '-',
-        },
-        {
-          Header: 'Join Time',
-          accessor: 'first_join_time',
-          Cell: ({ value }) => (value ? formatDateTime(value) : '-'),
-        },
-        {
-          Header: 'Duration',
-          accessor: 'total_duration',
-          Cell: ({ value }) => formatDuration(value),
-        },
-        {
-          Header: 'Status',
-          accessor: 'status',
-          Cell: ({ value, row }) => (
-            <div>
-              <Badge variant={getStatusVariant(value)}>
-                {ATTENDANCE_STATUS[value] || value}
-              </Badge>
-              {row.original.is_overridden && (
-                <Badge variant="warning" className="ml-2">
-                  Adjusted
-                </Badge>
-              )}
-            </div>
-          ),
-        },
-      ];
+      {
+        Header: 'Session',
+        accessor: 'session_title',
+        Cell: () => session?.title || '-',
+      },
+      {
+        Header: 'Date',
+        accessor: 'session_date',
+        Cell: () => (session?.scheduled_start_time
+          ? formatDateTime(session.scheduled_start_time)
+          : '-'),
+      },
+      {
+        Header: 'Join Time',
+        accessor: 'first_join_time',
+        Cell: ({ value }) => (value ? formatDateTime(value) : '-'),
+      },
+      {
+        Header: 'Duration',
+        accessor: 'total_duration',
+        Cell: ({ value }) => formatDuration(value),
+      },
+      {
+        Header: 'Status',
+        accessor: 'status',
+        Cell: ({ value, row }) => (
+          <div>
+            <Badge variant={getStatusVariant(value)}>
+              {ATTENDANCE_STATUS[value] || value}
+            </Badge>
+            {row.original.is_overridden && (
+            <Badge variant="warning" className="ml-2">
+              Adjusted
+            </Badge>
+            )}
+          </div>
+        ),
+      },
+    ];
 
   if (loading) {
     return (
