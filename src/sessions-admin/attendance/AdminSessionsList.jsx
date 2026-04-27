@@ -1,14 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Link, useParams } from 'react-router-dom';
 import {
-  Alert, Badge, Button, Container, DataTable, Spinner,
+  Alert, Badge, Button, Container, DataTable, Form, Icon, Spinner,
 } from '@openedx/paragon';
-import { People } from '@openedx/paragon/icons';
+import { People, Search } from '@openedx/paragon/icons';
 
 import { getPastSessionsForAttendance } from '../api';
 import { extractApiError, formatDateTime, getStatusVariant } from '../../course-home/sessions-tab/utils';
 import { SESSION_STATUS_LABELS } from '../../course-home/sessions-tab/constants';
+
+const PAGE_SIZE = 25;
 
 const TitleCell = ({ row }) => (
   <div>
@@ -52,18 +54,43 @@ const StatusCell = ({ value }) => (
 StatusCell.propTypes = { value: PropTypes.string };
 StatusCell.defaultProps = { value: '' };
 
+// Extracted to module scope (react/no-unstable-nested-components) — pulls
+// programId from useParams() so the link target stays correct across nav.
+const ViewMarkActionCell = ({ row }) => {
+  const { programId } = useParams();
+  return (
+    <Button
+      as={Link}
+      to={`/sessions/${programId}/attendance/sessions/${row.original.id}`}
+      variant="outline-primary"
+      size="sm"
+      iconBefore={People}
+    >
+      View / Mark
+    </Button>
+  );
+};
+ViewMarkActionCell.propTypes = {
+  row: PropTypes.shape({
+    original: PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    }).isRequired,
+  }).isRequired,
+};
+
 const COLUMNS = [
   { Header: 'Title', accessor: 'title', Cell: TitleCell },
   { Header: 'Date', accessor: 'scheduled_start_time', Cell: DateCell },
   { Header: 'Status', accessor: 'status', Cell: StatusCell },
   { Header: 'Attendance', accessor: 'attendance_synced', Cell: SyncCell },
+  { Header: 'Action', id: 'action', Cell: ViewMarkActionCell },
 ];
 
 const AdminSessionsList = () => {
-  const { programId } = useParams();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -86,25 +113,14 @@ const AdminSessionsList = () => {
     return () => { cancelled = true; };
   }, []);
 
-  // Augment columns with the action — needs programId from URL, hence inline here.
-  const columnsWithAction = [
-    ...COLUMNS,
-    {
-      Header: 'Action',
-      id: 'action',
-      Cell: ({ row }) => (
-        <Button
-          as={Link}
-          to={`/sessions/${programId}/attendance/sessions/${row.original.id}`}
-          variant="outline-primary"
-          size="sm"
-          iconBefore={People}
-        >
-          View / Mark
-        </Button>
-      ),
-    },
-  ];
+  const filteredSessions = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) { return sessions; }
+    return sessions.filter((s) => (
+      (s.title || '').toLowerCase().includes(q)
+      || (s.course_name || '').toLowerCase().includes(q)
+    ));
+  }, [sessions, query]);
 
   if (loading) {
     return (
@@ -125,14 +141,31 @@ const AdminSessionsList = () => {
       {sessions.length === 0 ? (
         <Alert variant="info">No past sessions in the last 30 days.</Alert>
       ) : (
-        <DataTable
-          data={sessions}
-          columns={columnsWithAction}
-          itemCount={sessions.length}
-        >
-          <DataTable.Table />
-          <DataTable.EmptyTable content="No sessions" />
-        </DataTable>
+        <>
+          <Form.Group controlId="sessions-search" className="mb-3" style={{ maxWidth: 320 }}>
+            <Form.Control
+              type="search"
+              placeholder="Search sessions…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              leadingElement={<Icon src={Search} />}
+            />
+          </Form.Group>
+          <DataTable
+            // Remount on filter change so pageIndex resets to 0 — react-table does
+            // not auto-reset when the data array shrinks beneath the current page.
+            key={query}
+            isPaginated
+            data={filteredSessions}
+            columns={COLUMNS}
+            itemCount={filteredSessions.length}
+            initialState={{ pageSize: PAGE_SIZE }}
+          >
+            <DataTable.Table />
+            <DataTable.EmptyTable content="No sessions match your search" />
+            <DataTable.TableFooter />
+          </DataTable>
+        </>
       )}
     </Container>
   );

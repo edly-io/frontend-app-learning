@@ -11,6 +11,9 @@ import AttendanceIndexRedirect from './attendance/AttendanceIndexRedirect';
 import AdminSessionsList from './attendance/AdminSessionsList';
 import AttendanceRosterPage from './attendance/AttendanceRosterPage';
 import MyAttendanceView from './attendance/MyAttendanceView';
+import PerSessionReport from './attendance/reports/PerSessionReport';
+import PerLearnerHistoryReport from './attendance/reports/PerLearnerHistoryReport';
+import CourseSummaryReport from './attendance/reports/CourseSummaryReport';
 
 /**
  * Route paths owned by the sessions-admin area. Importing from here keeps
@@ -60,6 +63,9 @@ export const sessionsAdminRoutes = (
       <Route path="sessions" element={<AdminSessionsList />} />
       <Route path="sessions/:sessionId" element={<AttendanceRosterPage />} />
       <Route path="me" element={<MyAttendanceView />} />
+      <Route path="by-session" element={<PerSessionReport />} />
+      <Route path="by-learner" element={<PerLearnerHistoryReport />} />
+      <Route path="summary" element={<CourseSummaryReport />} />
     </Route>
   </>
 );

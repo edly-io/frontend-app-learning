@@ -27,6 +27,12 @@ export const deleteSession = async (courseId, sessionId) => {
   await client.delete(`${getBaseUrl()}/courses/${courseId}/sessions/${sessionId}/`);
 };
 
+// Soft-cancel via partial update. Backend accepts {status:'cancelled'} on
+// SessionViewSet today; preserves audit trail and the Zoom meeting (unlike
+// destroy(), which tears Zoom down). Pair endpoint with a transition guard
+// in api/views.py — see Phase 8 in the plan.
+export const cancelSession = async (courseId, sessionId) => updateSession(courseId, sessionId, { status: 'cancelled' });
+
 export const getSession = async (courseId, sessionId) => {
   const client = getAuthenticatedHttpClient();
   const { data } = await client.get(`${getBaseUrl()}/courses/${courseId}/sessions/${sessionId}/`);

@@ -1,7 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, {
+  useEffect, useMemo, useState,
+} from 'react';
+import PropTypes from 'prop-types';
 import { Link, useParams } from 'react-router-dom';
 import {
-  Alert, Button, ButtonGroup, Container, Form, Spinner, Toast,
+  Alert, Badge, Button, Container, DataTable, Form, Spinner, Toast,
 } from '@openedx/paragon';
 import { ArrowBack, Save } from '@openedx/paragon/icons';
 
@@ -19,6 +22,48 @@ const STATUS_OPTIONS = [
 ];
 
 const DEFAULT_STATUS = 'present';
+const PAGE_SIZE = 25;
+
+const NameCell = ({ value }) => value || '—';
+NameCell.propTypes = { value: PropTypes.string };
+NameCell.defaultProps = { value: '' };
+
+const EmailCell = ({ value }) => <span className="text-muted">{value || '—'}</span>;
+EmailCell.propTypes = { value: PropTypes.string };
+EmailCell.defaultProps = { value: '' };
+
+// Extracted to module scope (react/no-unstable-nested-components). Reads the
+// current status and onChange callback from row data — see tableData below.
+const StatusCell = ({ row }) => (
+  <div className="d-flex" style={{ gap: 12 }}>
+    {STATUS_OPTIONS.map((opt) => (
+      <Form.Check
+        key={opt.value}
+        type="radio"
+        name={`status-${row.original.user_id}`}
+        id={`status-${row.original.user_id}-${opt.value}`}
+        label={opt.label}
+        checked={row.original.currentStatus === opt.value}
+        onChange={() => row.original.onStatusChange(opt.value)}
+      />
+    ))}
+  </div>
+);
+StatusCell.propTypes = {
+  row: PropTypes.shape({
+    original: PropTypes.shape({
+      user_id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      currentStatus: PropTypes.string.isRequired,
+      onStatusChange: PropTypes.func.isRequired,
+    }).isRequired,
+  }).isRequired,
+};
+
+const COLUMNS = [
+  { Header: 'Name', accessor: 'full_name', Cell: NameCell },
+  { Header: 'Email', accessor: 'email', Cell: EmailCell },
+  { Header: 'Status', id: 'status', Cell: StatusCell },
+];
 
 const AttendanceRosterPage = () => {
   const { programId, sessionId } = useParams();
@@ -105,6 +150,17 @@ const AttendanceRosterPage = () => {
     return out;
   }, [statusByUserId]);
 
+  // Augment each learner row with its current status and a per-row change
+  // handler so the module-scope StatusCell can re-render when the Map changes
+  // without nesting a component inside the parent's render.
+  const tableData = useMemo(() => (
+    learners.map((l) => ({
+      ...l,
+      currentStatus: statusByUserId.get(l.user_id) ?? DEFAULT_STATUS,
+      onStatusChange: (value) => setStatusFor(l.user_id, value),
+    }))
+  ), [learners, statusByUserId]);
+
   if (loading) {
     return (
       <Container className="py-5 text-center">
@@ -126,9 +182,11 @@ const AttendanceRosterPage = () => {
         >
           Back to sessions
         </Button>
-        <span className="text-muted small">
-          {counts.present} present · {counts.absent} absent · {counts.late} late
-        </span>
+        <div className="d-flex" style={{ gap: 6 }}>
+          <Badge variant="success">{counts.present} present</Badge>
+          <Badge variant="danger">{counts.absent} absent</Badge>
+          <Badge variant="warning">{counts.late} late</Badge>
+        </div>
       </div>
 
       {error && (
@@ -150,42 +208,17 @@ const AttendanceRosterPage = () => {
             </Button>
           </div>
 
-          <table className="table table-sm" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th style={{ width: 320 }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {learners.map((row) => (
-                <tr key={row.user_id}>
-                  <td>{row.full_name}</td>
-                  <td className="text-muted">{row.email}</td>
-                  <td>
-                    <ButtonGroup>
-                      {STATUS_OPTIONS.map((opt) => {
-                        const active = statusByUserId.get(row.user_id) === opt.value;
-                        return (
-                          <Form.Check
-                            key={opt.value}
-                            type="radio"
-                            name={`status-${row.user_id}`}
-                            id={`status-${row.user_id}-${opt.value}`}
-                            label={opt.label}
-                            inline
-                            checked={active}
-                            onChange={() => setStatusFor(row.user_id, opt.value)}
-                          />
-                        );
-                      })}
-                    </ButtonGroup>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <DataTable
+            isPaginated={learners.length > PAGE_SIZE}
+            data={tableData}
+            columns={COLUMNS}
+            itemCount={tableData.length}
+            initialState={{ pageSize: PAGE_SIZE }}
+          >
+            <DataTable.Table />
+            <DataTable.EmptyTable content="No learners" />
+            {learners.length > PAGE_SIZE && <DataTable.TableFooter />}
+          </DataTable>
 
           <div className="mt-3">
             <Button

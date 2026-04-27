@@ -5,7 +5,7 @@ import {
   Container, Spinner, Alert, Toast, StandardModal, Button,
 } from '@openedx/paragon';
 import {
-  getCalendarSessions, deleteSession, getMySessionRequests,
+  getCalendarSessions, deleteSession, cancelSession, getMySessionRequests,
 } from '../api';
 import { extractApiError } from '../utils';
 import { USER_ROLE } from '../constants';
@@ -74,6 +74,8 @@ const CalendarPage = () => {
   const [modalSession, setModalSession] = useState(undefined);
   const [sessionToDelete, setSessionToDelete] = useState(null);
   const [deleteError, setDeleteError] = useState('');
+  const [sessionToCancel, setSessionToCancel] = useState(null);
+  const [cancelError, setCancelError] = useState('');
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
 
@@ -161,6 +163,28 @@ const CalendarPage = () => {
     setDeleteError('');
   };
 
+  const handleCancelSession = (session) => {
+    setCancelError('');
+    setSessionToCancel(session);
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!sessionToCancel) { return; }
+    try {
+      await cancelSession(sessionToCancel.course_id, sessionToCancel.id);
+      setSessionToCancel(null);
+      setRefreshKey((prev) => prev + 1);
+      showSuccess('Session cancelled.');
+    } catch (err) {
+      setCancelError(extractApiError(err, 'Failed to cancel session'));
+    }
+  };
+
+  const handleCancelDismiss = () => {
+    setSessionToCancel(null);
+    setCancelError('');
+  };
+
   // ── Calendar navigation handlers passed down to CalendarView ──
   const handleNavigate = useCallback((direction) => {
     setCurrentDate((prev) => {
@@ -234,6 +258,7 @@ const CalendarPage = () => {
           onScheduleNew={handleScheduleNew}
           onEditSession={handleEditSession}
           onDeleteSession={handleDeleteSession}
+          onCancelSession={handleCancelSession}
           loading={loading}
           canManageSessions={canManageSessions}
           isLearner={isLearner}
@@ -291,6 +316,31 @@ const CalendarPage = () => {
           <p>
             Are you sure you want to delete the session <strong>{sessionToDelete.title}</strong>?
             This action cannot be undone.
+          </p>
+        </StandardModal>
+      )}
+
+      {/* Cancel confirmation — only for admins. Soft-cancel preserves the row +
+          Zoom; can be re-scheduled via PATCH status:scheduled if needed. */}
+      {canManageSessions && sessionToCancel && (
+        <StandardModal
+          isOpen
+          onClose={handleCancelDismiss}
+          title="Cancel Session"
+          footerNode={(
+            <>
+              <Button variant="tertiary" onClick={handleCancelDismiss}>Keep scheduled</Button>
+              <Button variant="warning" onClick={handleCancelConfirm} className="ml-2">
+                Cancel session
+              </Button>
+            </>
+          )}
+        >
+          {cancelError && <Alert variant="danger" className="mb-3">{cancelError}</Alert>}
+          <p>
+            Cancel <strong>{sessionToCancel.title}</strong>? Enrolled learners will see
+            the session as Cancelled. The Zoom meeting (if any) is kept so you can
+            reschedule.
           </p>
         </StandardModal>
       )}

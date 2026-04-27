@@ -9,7 +9,7 @@ import {
   Popover,
 } from '@openedx/paragon';
 import {
-  ChevronLeft, ChevronRight, Launch, Add, EditOutline, DeleteOutline,
+  ChevronLeft, ChevronRight, Launch, Add, EditOutline, DeleteOutline, EventBusy,
 } from '@openedx/paragon/icons';
 import { bucketSessionsByDay, getStatusVariant } from '../utils';
 import { SESSION_STATUS_LABELS, USER_ROLE } from '../constants';
@@ -134,7 +134,7 @@ const formatInstructors = (session) => {
 // Controlled popover — only one popover can be open across the whole calendar at
 // any time, and it closes cleanly when Edit/Delete opens another modal.
 const SessionPopover = ({
-  session, children, isOpen, onOpenChange, onEdit, onDelete, canManageSessions = false,
+  session, children, isOpen, onOpenChange, onEdit, onDelete, onCancel, canManageSessions = false,
   isLearner = false, learnerRequest = null, onRequestSession,
 }) => {
   const statusLabel = SESSION_STATUS_LABELS[session.status] || session.status;
@@ -158,6 +158,12 @@ const SessionPopover = ({
     e.stopPropagation();
     onOpenChange(false);
     onDelete(session);
+  };
+
+  const handleCancel = (e) => {
+    e.stopPropagation();
+    onOpenChange(false);
+    onCancel(session);
   };
 
   const handleJoin = (e, url) => {
@@ -224,10 +230,19 @@ const SessionPopover = ({
         </div>
         {session.status === 'scheduled' && (
           <div className="d-flex align-items-center" style={{ gap: 6, flexWrap: 'wrap' }}>
-            {canManageSessions && (
+            {canManageSessions && new Date(session.scheduled_start_time) > new Date() && (
               <>
                 <Button variant="tertiary" size="sm" iconBefore={EditOutline} onClick={handleEdit}>
                   Edit
+                </Button>
+                <Button
+                  variant="tertiary"
+                  size="sm"
+                  iconBefore={EventBusy}
+                  onClick={handleCancel}
+                  style={{ color: '#f0ad4e' }}
+                >
+                  Cancel
                 </Button>
                 <Button
                   variant="tertiary"
@@ -303,7 +318,7 @@ const SessionPopover = ({
 // buttons — no nested SessionPopover needed.
 
 const DayPopover = ({
-  date, sessions, children, isOpen, onOpenChange, onEdit, onDelete, canManageSessions = false,
+  date, sessions, children, isOpen, onOpenChange, onEdit, onDelete, onCancel, canManageSessions = false,
   isLearner = false, studentRequestMap, onRequestSession,
 }) => {
   const dateLabel = date.toLocaleDateString('en-US', {
@@ -331,6 +346,12 @@ const DayPopover = ({
     e.stopPropagation();
     onOpenChange(false);
     onDelete(session);
+  };
+
+  const handleCancel = (e, session) => {
+    e.stopPropagation();
+    onOpenChange(false);
+    onCancel(session);
   };
 
   const handleJoin = (e, url) => {
@@ -434,7 +455,7 @@ const DayPopover = ({
                   )}
                   {session.status === 'scheduled' && (
                   <div className="mt-1 d-flex align-items-center" style={{ gap: 4, flexWrap: 'wrap' }}>
-                    {canManageSessions && (
+                    {canManageSessions && new Date(session.scheduled_start_time) > new Date() && (
                       <>
                         <Button
                           variant="tertiary"
@@ -443,6 +464,15 @@ const DayPopover = ({
                           onClick={(e) => handleEdit(e, session)}
                         >
                           Edit
+                        </Button>
+                        <Button
+                          variant="tertiary"
+                          size="sm"
+                          iconBefore={EventBusy}
+                          style={{ color: '#f0ad4e' }}
+                          onClick={(e) => handleCancel(e, session)}
+                        >
+                          Cancel
                         </Button>
                         <Button
                           variant="tertiary"
@@ -549,7 +579,7 @@ const DayPopover = ({
 const MAX_CHIPS = 2;
 
 const DayCell = ({
-  date, sessions = [], onEditSession, onDeleteSession,
+  date, sessions = [], onEditSession, onDeleteSession, onCancelSession,
   openPopoverId, setOpenPopoverId,
   openDayKey, setOpenDayKey,
   isOutsideMonth = false, cellMinHeight = 110, canManageSessions = false,
@@ -630,6 +660,7 @@ const DayCell = ({
           })}
           onEdit={onEditSession}
           onDelete={onDeleteSession}
+          onCancel={onCancelSession}
           canManageSessions={canManageSessions}
           isLearner={isLearner}
           learnerRequest={studentRequestMap?.get(session.id) || null}
@@ -695,6 +726,7 @@ const DayCell = ({
       onOpenChange={setDayOpen}
       onEdit={onEditSession}
       onDelete={onDeleteSession}
+      onCancel={onCancelSession}
       canManageSessions={canManageSessions}
       isLearner={isLearner}
       studentRequestMap={studentRequestMap}
@@ -708,7 +740,7 @@ const DayCell = ({
 // ─── MonthGrid ────────────────────────────────────────────────────────────────
 
 const MonthGrid = ({
-  currentDate, sessionMap, onEditSession, onDeleteSession,
+  currentDate, sessionMap, onEditSession, onDeleteSession, onCancelSession,
   openPopoverId, setOpenPopoverId,
   openDayKey, setOpenDayKey, canManageSessions = false,
   isLearner = false, studentRequestMap, onRequestSession,
@@ -758,6 +790,7 @@ const MonthGrid = ({
             sessions={sessionMap.get(toDateKey(day)) || []}
             onEditSession={onEditSession}
             onDeleteSession={onDeleteSession}
+            onCancelSession={onCancelSession}
             openPopoverId={openPopoverId}
             setOpenPopoverId={setOpenPopoverId}
             openDayKey={openDayKey}
@@ -855,7 +888,7 @@ const layoutSessions = (sessions) => {
 };
 
 const TimeGrid = ({
-  days, sessionMap, onEditSession, onDeleteSession,
+  days, sessionMap, onEditSession, onDeleteSession, onCancelSession,
   openPopoverId, setOpenPopoverId, canManageSessions = false,
   isLearner = false, studentRequestMap, onRequestSession,
 }) => {
@@ -974,6 +1007,7 @@ const TimeGrid = ({
                       })}
                       onEdit={onEditSession}
                       onDelete={onDeleteSession}
+                      onCancel={onCancelSession}
                       canManageSessions={canManageSessions}
                       isLearner={isLearner}
                       learnerRequest={studentRequestMap?.get(session.id) || null}
@@ -1047,7 +1081,7 @@ const TimeGrid = ({
 // ─── WeekGrid ─────────────────────────────────────────────────────────────────
 
 const WeekGrid = ({
-  currentDate, sessionMap, onEditSession, onDeleteSession,
+  currentDate, sessionMap, onEditSession, onDeleteSession, onCancelSession,
   openPopoverId, setOpenPopoverId, canManageSessions = false,
   isLearner = false, studentRequestMap, onRequestSession,
 }) => (
@@ -1056,6 +1090,7 @@ const WeekGrid = ({
     sessionMap={sessionMap}
     onEditSession={onEditSession}
     onDeleteSession={onDeleteSession}
+    onCancelSession={onCancelSession}
     openPopoverId={openPopoverId}
     setOpenPopoverId={setOpenPopoverId}
     canManageSessions={canManageSessions}
@@ -1068,7 +1103,7 @@ const WeekGrid = ({
 // ─── DayView ──────────────────────────────────────────────────────────────────
 
 const DayView = ({
-  currentDate, sessionMap, onEditSession, onDeleteSession,
+  currentDate, sessionMap, onEditSession, onDeleteSession, onCancelSession,
   openPopoverId, setOpenPopoverId, canManageSessions = false,
   isLearner = false, studentRequestMap, onRequestSession,
 }) => (
@@ -1077,6 +1112,7 @@ const DayView = ({
     sessionMap={sessionMap}
     onEditSession={onEditSession}
     onDeleteSession={onDeleteSession}
+    onCancelSession={onCancelSession}
     openPopoverId={openPopoverId}
     setOpenPopoverId={setOpenPopoverId}
     canManageSessions={canManageSessions}
@@ -1090,7 +1126,7 @@ const DayView = ({
 
 const CalendarView = ({
   sessions, view, currentDate, onViewChange, onNavigate, onGoToToday,
-  onScheduleNew, onEditSession, onDeleteSession, loading = false, canManageSessions = false,
+  onScheduleNew, onEditSession, onDeleteSession, onCancelSession, loading = false, canManageSessions = false,
   isLearner = false, studentRequestMap, onRequestSession,
 }) => {
   // Only one popover open at a time; null = none. Chip clicks and outside
@@ -1130,6 +1166,12 @@ const CalendarView = ({
     setOpenPopoverId(null);
     setOpenDayKey(null);
     onDeleteSession(session);
+  };
+
+  const handleCancel = (session) => {
+    setOpenPopoverId(null);
+    setOpenDayKey(null);
+    onCancelSession(session);
   };
 
   const handleScheduleNew = () => {
@@ -1204,6 +1246,7 @@ const CalendarView = ({
           sessionMap={sessionMap}
           onEditSession={handleEdit}
           onDeleteSession={handleDelete}
+          onCancelSession={handleCancel}
           openPopoverId={openPopoverId}
           setOpenPopoverId={setOpenPopoverId}
           openDayKey={openDayKey}
@@ -1220,6 +1263,7 @@ const CalendarView = ({
           sessionMap={sessionMap}
           onEditSession={handleEdit}
           onDeleteSession={handleDelete}
+          onCancelSession={handleCancel}
           openPopoverId={openPopoverId}
           setOpenPopoverId={setOpenPopoverId}
           canManageSessions={canManageSessions}
@@ -1234,6 +1278,7 @@ const CalendarView = ({
           sessionMap={sessionMap}
           onEditSession={handleEdit}
           onDeleteSession={handleDelete}
+          onCancelSession={handleCancel}
           openPopoverId={openPopoverId}
           setOpenPopoverId={setOpenPopoverId}
           canManageSessions={canManageSessions}
