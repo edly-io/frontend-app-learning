@@ -14,7 +14,7 @@ import { useModel } from '../../generic/model-store';
 
 const ProgressTab = () => {
   const courseId = useContextId();
-  const { disableProgressGraph } = useModel('progress', courseId);
+  const { disableProgressGraph, hasActiveCertificate } = useModel('progress', courseId);
 
   const windowWidth = useWindowSize().width;
   if (windowWidth === undefined) {
@@ -32,8 +32,8 @@ const ProgressTab = () => {
         <div className="col-12 col-md-8 p-0">
           {!disableProgressGraph && <CourseCompletion />}
           <ProgressTabCertificateStatusMainBodySlot />
-          <ProgressTabCourseGradeSlot />
-          <ProgressTabGradeBreakdownSlot />
+          {hasActiveCertificate !== false && <ProgressTabCourseGradeSlot />}
+          {hasActiveCertificate !== false && <ProgressTabGradeBreakdownSlot />}
         </div>
 
         {/* Side panel */}

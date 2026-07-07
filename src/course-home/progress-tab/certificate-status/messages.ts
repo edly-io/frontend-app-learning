@@ -1,6 +1,16 @@
 import { defineMessages } from '@edx/frontend-platform/i18n';
 
 const messages = defineMessages({
+  noCertificateHeader: {
+    id: 'progress.certificateStatus.noCertificateHeader',
+    defaultMessage: 'Certificate status',
+    description: 'Header when the course does not offer a certificate',
+  },
+  noCertificateBody: {
+    id: 'progress.certificateStatus.noCertificateBody',
+    defaultMessage: 'This course does not offer a certificate.',
+    description: 'Body when the course does not offer a certificate',
+  },
   notPassingHeader: {
     id: 'progress.certificateStatus.notPassingHeader',
     defaultMessage: 'Certificate status',

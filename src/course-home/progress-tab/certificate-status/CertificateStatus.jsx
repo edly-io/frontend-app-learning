@@ -37,6 +37,7 @@ const CertificateStatus = () => {
       gradeRange,
     },
     hasScheduledContent,
+    hasActiveCertificate,
     userHasPassingGrade,
     verificationData,
     verifiedMode,
@@ -215,6 +216,19 @@ const CertificateStatus = () => {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  if (hasActiveCertificate === false) {
+    return (
+      <section data-testid="certificate-status-component" className="text-dark-700 mb-4">
+        <Card className="bg-light-200 raised-card">
+          <Card.Header title={intl.formatMessage(messages.noCertificateHeader)} />
+          <Card.Section className="small text-gray-700">
+            {intl.formatMessage(messages.noCertificateBody)}
+          </Card.Section>
+        </Card>
+      </section>
+    );
+  }
+
   if (!certCase) {
     return null;
   }
