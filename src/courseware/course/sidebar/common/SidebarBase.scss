@@ -3,4 +3,11 @@
         overflow-y: scroll;
         padding: 0 .625rem !important;
     }
+
+    /* Desktop had no overflow rule at all, so long outlines were clipped by the
+       page layout with no way to reach sections past the visible area. */
+    @media (--pgn-size-breakpoint-min-width-xl) {
+        max-height: calc(100vh - 2rem);
+        overflow-y: auto;
+    }
 }
