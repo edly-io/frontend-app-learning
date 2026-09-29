@@ -11,8 +11,6 @@ import { Routes, Route } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { fetchDiscussionTab, fetchLiveTab } from './course-home/data/thunks';
 import DiscussionTab from './course-home/discussion-tab/DiscussionTab';
-import SessionsTab, { CalendarPage, SessionsListPage, SessionDetailPage } from './course-home/sessions-tab';
-import { fetchAttendanceTab } from './course-home/data';
 
 import messages from './i18n';
 import { UserMessagesProvider } from './generic/user-messages';
@@ -56,7 +54,6 @@ subscribe(APP_READY, () => {
                   <Route path="*" element={<PageWrap><PageNotFound /></PageWrap>} />
                   <Route path={ROUTES.UNSUBSCRIBE} element={<PageWrap><GoalUnsubscribe /></PageWrap>} />
                   <Route path={ROUTES.REDIRECT} element={<PageWrap><CoursewareRedirectLandingPage /></PageWrap>} />
-                  <Route path={ROUTES.CALENDAR} element={<PageWrap><CalendarPage /></PageWrap>} />
                   <Route
                     path={ROUTES.PREFERENCES_UNSUBSCRIBE}
                     element={
@@ -93,36 +90,6 @@ subscribe(APP_READY, () => {
                       <DecodePageRoute>
                         <TabContainer tab="dates" fetch={fetchDatesTab} slice="courseHome">
                           <DatesTab />
-                        </TabContainer>
-                      </DecodePageRoute>
-                    )}
-                  />
-                  <Route
-                    path={DECODE_ROUTES.ATTENDANCE_DETAIL}
-                    element={(
-                      <DecodePageRoute>
-                        <TabContainer tab="attendance" fetch={fetchAttendanceTab} slice="courseHome">
-                          <SessionDetailPage />
-                        </TabContainer>
-                      </DecodePageRoute>
-                    )}
-                  />
-                  <Route
-                    path={DECODE_ROUTES.ATTENDANCE}
-                    element={(
-                      <DecodePageRoute>
-                        <TabContainer tab="attendance" fetch={fetchAttendanceTab} slice="courseHome">
-                          <SessionsListPage />
-                        </TabContainer>
-                      </DecodePageRoute>
-                    )}
-                  />
-                  <Route
-                    path={DECODE_ROUTES.ATTENDANCE_V1}
-                    element={(
-                      <DecodePageRoute>
-                        <TabContainer tab="attendance" fetch={fetchAttendanceTab} slice="courseHome">
-                          <SessionsTab />
                         </TabContainer>
                       </DecodePageRoute>
                     )}

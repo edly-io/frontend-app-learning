@@ -3,9 +3,6 @@ export const DECODE_ROUTES = {
   HOME: '/course/:courseId/home',
   LIVE: '/course/:courseId/live',
   DATES: '/course/:courseId/dates',
-  ATTENDANCE: '/course/:courseId/sessions',
-  ATTENDANCE_DETAIL: '/course/:courseId/sessions/:sessionId',
-  ATTENDANCE_V1: '/course/:courseId/sessions-v1',
   DISCUSSION: '/course/:courseId/discussion/:path/*',
   PROGRESS: [
     '/course/:courseId/progress/:targetUserId/',
@@ -30,7 +27,6 @@ export const ROUTES = {
   DASHBOARD: 'dashboard',
   ENTERPRISE_LEARNER_DASHBOARD: 'enterprise-learner-dashboard',
   CONSENT: 'consent',
-  CALENDAR: '/sessions/calendar',
 } as const satisfies Readonly<{ [k: string]: string }>;
 
 export const REDIRECT_MODES = {

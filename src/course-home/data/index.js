@@ -2,7 +2,6 @@ export {
   fetchDatesTab,
   fetchOutlineTab,
   fetchProgressTab,
-  fetchAttendanceTab,
   resetDeadlines,
   deprecatedSaveCourseGoal,
   saveWeeklyLearningGoal,
