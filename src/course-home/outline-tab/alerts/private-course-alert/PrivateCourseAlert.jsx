@@ -3,48 +3,21 @@ import PropTypes from 'prop-types';
 import { getConfig } from '@edx/frontend-platform';
 import { useIntl, FormattedMessage } from '@edx/frontend-platform/i18n';
 import { getLoginRedirectUrl } from '@edx/frontend-platform/auth';
-import { Alert, Button, Hyperlink } from '@openedx/paragon';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { Alert, Hyperlink } from '@openedx/paragon';
 
 import enrollmentMessages from '../../../../alerts/enrollment-alert/messages';
 import genericMessages from '../../../../generic/messages';
-import messages from './messages';
 import outlineMessages from '../../messages';
-import useEnrollClickHandler from '../../../../alerts/enrollment-alert/clickHook';
 import { useModel } from '../../../../generic/model-store';
 
 const PrivateCourseAlert = ({ payload }) => {
   const intl = useIntl();
   const {
     anonymousUser,
-    canEnroll,
     courseId,
   } = payload;
 
-  const {
-    org,
-    title,
-  } = useModel('courseHomeMeta', courseId);
-
-  const { enrollClickHandler, loading } = useEnrollClickHandler(
-    courseId,
-    org,
-    intl.formatMessage(enrollmentMessages.success),
-  );
-
-  const enrollNowButton = (
-    <Button
-      disabled={loading}
-      variant="link"
-      className="p-0 border-0 align-top mr-1"
-      style={{ textDecoration: 'underline' }}
-      size="sm"
-      onClick={enrollClickHandler}
-    >
-      {intl.formatMessage(enrollmentMessages.enrollNowInline)}
-    </Button>
-  );
+  const { title } = useModel('courseHomeMeta', courseId);
 
   const register = (
     <Hyperlink
@@ -85,18 +58,7 @@ const PrivateCourseAlert = ({ payload }) => {
       {!anonymousUser && (
         <>
           <p className="font-weight-bold">{intl.formatMessage(outlineMessages.welcomeTo)} {title}</p>
-          {canEnroll && (
-            <div className="d-flex">
-              {enrollNowButton}
-              {intl.formatMessage(messages.toAccess)}
-              {loading && <FontAwesomeIcon icon={faSpinner} spin />}
-            </div>
-          )}
-          {!canEnroll && (
-            <>
-              {intl.formatMessage(enrollmentMessages.alert)}
-            </>
-          )}
+          {intl.formatMessage(enrollmentMessages.alert)}
         </>
       )}
     </Alert>
@@ -106,7 +68,6 @@ const PrivateCourseAlert = ({ payload }) => {
 PrivateCourseAlert.propTypes = {
   payload: PropTypes.shape({
     anonymousUser: PropTypes.bool,
-    canEnroll: PropTypes.bool,
     courseId: PropTypes.string,
   }).isRequired,
 };
