@@ -600,31 +600,14 @@ describe('Outline Tab', () => {
         expect(screen.getByText('You must be enrolled in the course to see course content.')).toBeInTheDocument();
       });
 
-      it('displays alert for unenrolled user', async () => {
+      it('displays alert without an enrollment button for unenrolled user', async () => {
         await fetchAndRender();
 
         const alert = await screen.findByTestId('private-course-alert');
         expect(alert).toHaveAttribute('role', 'alert');
 
-        expect(screen.getByRole('button', { name: 'Enroll now' })).toBeInTheDocument();
-      });
-
-      it('handles button click', async () => {
-        const { location } = window;
-        delete window.location;
-        window.location = {
-          reload: jest.fn(),
-        };
-        await fetchAndRender();
-
-        const button = await screen.findByRole('button', { name: 'Enroll now' });
-        fireEvent.click(button);
-        await waitFor(() => expect(axiosMock.history.post).toHaveLength(1));
-        expect(axiosMock.history.post[0].data)
-          .toEqual(JSON.stringify({ course_details: { course_id: courseId } }));
-        expect(window.location.reload).toHaveBeenCalledTimes(1);
-
-        window.location = location;
+        expect(screen.queryByRole('button', { name: 'Enroll now' })).not.toBeInTheDocument();
+        expect(screen.getByText('You must be enrolled in the course to see course content.')).toBeInTheDocument();
       });
     });
 
